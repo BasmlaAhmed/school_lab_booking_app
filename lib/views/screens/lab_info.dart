@@ -1,0 +1,470 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart' as p;
+import '../../util/app_color.dart';
+import '../../viewmodel/lab_provider.dart';
+
+class LabInfo extends StatefulWidget {
+  final String labId;               // ← مهم: ID اللاب من Supabase
+  final String labName;
+  final Map<String, dynamic> labData;
+  final String engineerName;
+
+  const LabInfo({
+    super.key,
+    required this.labId,
+    required this.labName,
+    required this.labData,
+    required this.engineerName,
+  });
+
+  @override
+  State<LabInfo> createState() => _LabInfoState();
+}
+
+class _LabInfoState extends State<LabInfo> {
+  DateTime? selectedDate;
+  TimeOfDay? startTime;
+  TimeOfDay? endTime;
+  final TextEditingController classController = TextEditingController();
+  Timer? timer;
+
+  /// -------- Helper to convert Date + Time to ISO String ----------
+  String _buildIsoDateTime(DateTime date, TimeOfDay time) {
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    return dt.toIso8601String(); // Supabase accepts this format
+  }
+
+  /// -------- Pickers ----------
+  Future<void> pickDate() async {
+    DateTime? date = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2030),
+    );
+    if (date != null) setState(() => selectedDate = date);
+  }
+
+  Future<void> pickStartTime() async {
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: startTime ?? TimeOfDay.now(),
+    );
+    if (time != null) setState(() => startTime = time);
+  }
+
+  Future<void> pickEndTime() async {
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: endTime ?? TimeOfDay.now(),
+    );
+    if (time != null) setState(() => endTime = time);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    classController.text = widget.labData["className"]?.toString() ??
+        widget.labData["class_name"]?.toString() ??
+        "";
+
+    /// ------- Try parse stored data -------
+    final fromTimeIso = widget.labData["from_time"] ?? widget.labData["from"];
+    final toTimeIso = widget.labData["to_time"] ?? widget.labData["to"];
+
+    if (fromTimeIso != null) {
+      final dt = DateTime.tryParse(fromTimeIso);
+      if (dt != null) {
+        startTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
+        selectedDate = DateTime(dt.year, dt.month, dt.day);
+      } else {
+        // fallback: if stored as "HH:mm"
+        if (fromTimeIso is String && fromTimeIso.contains(':')) {
+          final parts = fromTimeIso.split(':');
+          if (parts.length >= 2) {
+            startTime = TimeOfDay(
+                hour: int.tryParse(parts[0]) ?? 0,
+                minute: int.tryParse(parts[1]) ?? 0);
+          }
+        }
+      }
+    }
+
+    if (toTimeIso != null) {
+      final dt = DateTime.tryParse(toTimeIso);
+      if (dt != null) {
+        endTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
+        selectedDate ??= DateTime(dt.year, dt.month, dt.day);
+      } else {
+        // fallback: if stored as "HH:mm"
+        if (toTimeIso is String && toTimeIso.contains(':')) {
+          final parts = toTimeIso.split(':');
+          if (parts.length >= 2) {
+            endTime = TimeOfDay(
+                hour: int.tryParse(parts[0]) ?? 0,
+                minute: int.tryParse(parts[1]) ?? 0);
+          }
+        }
+      }
+    }
+
+    // If this lab is already booked and we have a date+endTime, schedule auto-release
+    if ((widget.labData["status"]?.toString() ?? '') == 'booked') {
+      _maybeScheduleFromStored();
+    }
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    classController.dispose();
+    super.dispose();
+  }
+
+  String _formatTime(TimeOfDay t) =>
+      "${t.hour}:${t.minute.toString().padLeft(2, '0')}";
+
+  /// ------------------ SCHEDULING LOGIC ------------------
+  /// Try to schedule release using available stored data (to_time or date+endTime)
+  void _maybeScheduleFromStored() {
+    // priority: use exact stored to_time ISO if present
+    final toIso = widget.labData["to_time"] ?? widget.labData["to"];
+    if (toIso != null) {
+      final dt = DateTime.tryParse(toIso.toString());
+      if (dt != null) {
+        _scheduleReleaseAt(dt);
+        return;
+      }
+    }
+
+    // fallback: use selectedDate + endTime if both exist
+    if (selectedDate != null && endTime != null) {
+      final endDt = DateTime(
+        selectedDate!.year,
+        selectedDate!.month,
+        selectedDate!.day,
+        endTime!.hour,
+        endTime!.minute,
+      );
+      _scheduleReleaseAt(endDt);
+    }
+  }
+
+  /// Schedule a Timer to run at targetDateTime.
+  /// It will call provider.releaseLab(...) and update local UI.
+  void _scheduleReleaseAt(DateTime target) {
+    timer?.cancel();
+    final now = DateTime.now();
+    final duration = target.difference(now);
+
+    if (duration.inSeconds <= 0) {
+      // time already passed — release immediately
+      _releaseNow();
+      return;
+    }
+
+    timer = Timer(duration, () async {
+      await _releaseNow();
+    });
+  }
+
+  /// Perform release: call provider to update DB, then update local UI.
+  Future<void> _releaseNow() async {
+    try {
+      await p.Provider.of<LabProvider>(context, listen: false)
+          .releaseLab(widget.labId);
+    } catch (e) {
+      // ignore errors but print for debugging
+      debugPrint('releaseNow error: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      widget.labData["status"] = "available";
+      widget.labData.remove("bookedBy");
+      widget.labData.remove("from");
+      widget.labData.remove("to");
+      widget.labData.remove("className");
+      widget.labData.remove("from_time");
+      widget.labData.remove("to_time");
+      widget.labData.remove("date");
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final labProvider = p.Provider.of<LabProvider>(context, listen: false);
+    final labData = widget.labData;
+
+    return Scaffold(
+      backgroundColor: AppColor.background,
+      body: Padding(
+        padding: EdgeInsets.all(15.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 40.h),
+
+            /// -------- Title --------
+            Text(
+              "${widget.labName} Details",
+              style: TextStyle(
+                fontSize: 32.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColor.textPrimary,
+              ),
+            ),
+            SizedBox(height: 20.h),
+
+            /// -------- Lab Status Card --------
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.r)),
+              elevation: 3,
+              child: ListTile(
+                leading: Icon(Icons.computer,
+                    color: AppColor.primaryDark, size: 35.sp),
+                title: Text(
+                  labData["status"] == "available"
+                      ? "Available"
+                      : "Booked by ${labData["bookedBy"] ?? "Unknown"}",
+                  style: TextStyle(
+                      fontSize: 18.sp,
+                      color: AppColor.textPrimary,
+                      fontWeight: FontWeight.w600),
+                ),
+                subtitle: labData["status"] == "available"
+                    ? null
+                    : Text(
+                        "Class: ${labData["className"]}\n"
+                        "From ${labData["from"]} to ${labData["to"]}",
+                        style: TextStyle(color: Colors.red),
+                      ),
+              ),
+            ),
+
+            SizedBox(height: 20.h),
+
+            /// -------- Class Input --------
+            TextField(
+              controller: classController,
+              decoration: InputDecoration(
+                labelText: "Class / Department",
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r)),
+              ),
+            ),
+
+            SizedBox(height: 20.h),
+
+            /// -------- Pickers --------
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: pickDate,
+                    child: _box(
+                      selectedDate == null
+                          ? "Pick Date"
+                          : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: pickStartTime,
+                    child: _box(
+                      startTime == null
+                          ? "Start Time"
+                          : _formatTime(startTime!),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: pickEndTime,
+                    child: _box(
+                      endTime == null
+                          ? "End Time"
+                          : _formatTime(endTime!),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            Spacer(),
+
+            /// -------- BOOK BUTTON --------
+            InkWell(
+              onTap: () async {
+                if (classController.text.isEmpty ||
+                    selectedDate == null ||
+                    startTime == null ||
+                    endTime == null) {
+                  _error("Please complete all fields");
+                  return;
+                }
+
+                // -------- Convert to ISO for Supabase --------
+                final fromIso =
+                    _buildIsoDateTime(selectedDate!, startTime!);
+                final toIso =
+                    _buildIsoDateTime(selectedDate!, endTime!);
+
+                /// -------- Call Supabase --------
+                final ok = await labProvider.bookLab(
+                  widget.labId,
+                  classController.text,
+                  fromIso,
+                  toIso,
+                );
+
+                if (!ok) {
+                  _error("Booking failed. Try again.");
+                  return;
+                }
+
+                /// -------- Update local UI --------
+                setState(() {
+                  labData["status"] = "booked";
+                  labData["bookedBy"] = widget.engineerName;
+                  labData["className"] = classController.text;
+                  labData["from"] = _formatTime(startTime!);
+                  labData["to"] = _formatTime(endTime!);
+                  labData["from_time"] = fromIso;
+                  labData["to_time"] = toIso;
+                  labData["date"] = selectedDate?.toIso8601String();
+                });
+
+                // schedule release at toIso
+                final parsedTo = DateTime.tryParse(toIso);
+                if (parsedTo != null) {
+                  _scheduleReleaseAt(parsedTo);
+                } else {
+                  // fallback: schedule using selectedDate + endTime
+                  final fallback = DateTime(
+                    selectedDate!.year,
+                    selectedDate!.month,
+                    selectedDate!.day,
+                    endTime!.hour,
+                    endTime!.minute,
+                  );
+                  _scheduleReleaseAt(fallback);
+                }
+
+                /// -------- Success Popup --------
+                _showSuccess();
+              },
+              child: Container(
+                height: 55.h,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColor.primarylight,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Center(
+                  child: Text(
+                    "Book Lab",
+                    style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 12.h),
+
+            /// -------- BACK BUTTON --------
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                height: 55.h,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColor.primaryDark,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Center(
+                  child: Text(
+                    "Back",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ---------------- UI Helpers ----------------
+  Widget _box(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 15.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: AppColor.border),
+      ),
+      child: Center(
+        child: Text(text, style: TextStyle(fontSize: 16.sp)),
+      ),
+    );
+  }
+
+  void _error(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccess() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r)),
+        title: Text("Booking Confirmed",
+            style: TextStyle(
+                color: AppColor.primaryDark,
+                fontWeight: FontWeight.bold)),
+        content: Text(
+          "Your booking for ${widget.labName} is confirmed.",
+          style: TextStyle(color: AppColor.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context, true);
+            },
+            child: Text(
+              "OK",
+              style: TextStyle(
+                  color: AppColor.primaryDark,
+                  fontWeight: FontWeight.bold),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
