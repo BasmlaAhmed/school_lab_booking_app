@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'viewmodel/device_provider.dart';
 import 'viewmodel/lab_provider.dart';
 import 'viewmodel/user_provider.dart';
 import 'views/screens/get_started.dart';
-import 'views/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -23,40 +23,35 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> login() async {
-    if (_userEmail == null || _password == null) return false;
-    if (_userEmail!.isEmpty || _password!.isEmpty) return false;
+  if (_userEmail == null || _password == null) return false;
 
-    try {
-      // signIn (login)
-      final res = await _supabase.auth.signInWithPassword(
-        email: _userEmail!,
-        password: _password!,
-      );
+  try {
+    final res = await _supabase.auth.signInWithPassword(
+      email: _userEmail!,
+      password: _password!,
+    );
 
-      if (res.user == null) {
-        // قد يكون المستخدم مسجّل لكن لم يؤكد الإيميل (session = null) أو خطأ آخر
-        print('Login failed or email not confirmed. session: ${res.session}');
-        return false;
-      }
-
-      // جلب بيانات المستخدم من جدول الـ users — تأكد من اسم الجدول (users أو Users)
-      final userData = await _supabase
-          .from('Users') // أو 'Users' إذا جدولك اسمه بكابيتال
-          .select()
-          .eq('email', _userEmail!)
-          .maybeSingle();
-
-      if (userData != null) {
-        _userName = userData['name'] as String?;
-      }
-
-      notifyListeners();
-      return true;
-    } catch (e, st) {
-      print('Login exception: $e\n$st');
+    if (res.user == null) {
+      debugPrint('Login failed: ${res}');
       return false;
     }
+
+    // optional: small delay to ensure session persisted
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    final current = _supabase.auth.currentUser;
+    debugPrint('After signIn — auth.currentUser = $current');
+
+    // now fetch user profile or proceed
+    final profile = await _supabase.from('Users').select().eq('id', res.user!.id).maybeSingle();
+    _userName = profile?['name'] as String?;
+    notifyListeners();
+    return true;
+  } catch (e, st) {
+    debugPrint('Login exception: $e\n$st');
+    return false;
   }
+}
 
   Future<bool> signUp(String name, String email, String password) async {
     // Validate inputs early

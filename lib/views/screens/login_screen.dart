@@ -24,8 +24,8 @@ class _LoginScreenState extends State<LoginScreen> {
 void initState() {
   super.initState();
 
-  emailController.text = "bb@gmail.com";
-  passController.text = "123456";
+  emailController.text;
+  passController.text;
 
    WidgetsBinding.instance.addPostFrameCallback((_) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
