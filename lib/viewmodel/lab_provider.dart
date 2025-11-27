@@ -35,9 +35,22 @@ class LabProvider extends ChangeNotifier {
       final List data = response as List;
 
       _labs = data.map<LabModel>((lab) {
-  return LabModel.fromMap(lab);
-}).toList();
+        // user info returned under alias "users"
+        final userData = lab['users'];
+        final engineerName = (userData != null && userData is Map && userData['name'] != null)
+            ? userData['name'].toString()
+            : null;
 
+        return LabModel(
+          id: lab['id']?.toString() ?? '',
+          name: lab['name']?.toString() ?? '',
+          status: lab['status']?.toString() ?? '',
+          bookedBy: engineerName,
+          fromTime: lab['from_time']?.toString(),
+          toTime: lab['to_time']?.toString(),
+          className: lab['class_name']?.toString(),
+        );
+      }).toList();
 
       notifyListeners();
     } catch (e) {
@@ -158,4 +171,30 @@ class LabProvider extends ChangeNotifier {
       return false;
     }
   }
+    /// --------------------------
+  ///   Release expired bookings
+  /// --------------------------
+  Future<void> releaseExpired() async {
+    try {
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+
+      final res = await _supabase
+          .from('Labs')
+          .select('id, to_time')
+          .eq('status', 'booked')
+          .lte('to_time', nowIso);
+
+      if (res == null) return;
+
+      final rows = res as List<dynamic>? ?? [];
+      for (final row in rows) {
+        final id = row['id']?.toString();
+        if (id == null || id.isEmpty) continue;
+        await releaseLab(id);
+      }
+    } catch (e) {
+      debugPrint('releaseExpired error: $e');
+    }
+  }
+
 }

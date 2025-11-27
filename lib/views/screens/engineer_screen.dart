@@ -14,11 +14,13 @@ class EngineerScreen extends StatelessWidget {
     final labProvider = p.Provider.of<LabProvider>(context);
 
     /// Load labs on screen opening (only if empty to avoid repeated calls)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (labProvider.labs.isEmpty) {
-        p.Provider.of<LabProvider>(context, listen: false).fetchLabs();
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+  final provider = p.Provider.of<LabProvider>(context, listen: false);
+
+  await provider.releaseExpired();   // ← أهم خطوة!
+  await provider.fetchLabs();        // ← بعدها هاتِ اللستة المحدثة
+});
+
 
     return Scaffold(
       backgroundColor: AppColor.background,

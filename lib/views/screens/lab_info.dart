@@ -6,7 +6,7 @@ import '../../util/app_color.dart';
 import '../../viewmodel/lab_provider.dart';
 
 class LabInfo extends StatefulWidget {
-  final String labId;               // ← مهم: ID اللاب من Supabase
+  final String labId; // ← مهم: ID اللاب من Supabase
   final String labName;
   final Map<String, dynamic> labData;
   final String engineerName;
@@ -30,16 +30,16 @@ class _LabInfoState extends State<LabInfo> {
   final TextEditingController classController = TextEditingController();
   Timer? timer;
 
-  /// -------- Helper to convert Date + Time to ISO String ----------
-  String _buildIsoDateTime(DateTime date, TimeOfDay time) {
-    final dt = DateTime(
+  /// -------- Helper to convert Date + Time to ISO String (local -> UTC) ----------
+  String _buildIsoDateTimeUtc(DateTime date, TimeOfDay time) {
+    final dtLocal = DateTime(
       date.year,
       date.month,
       date.day,
       time.hour,
       time.minute,
     );
-    return dt.toIso8601String(); // Supabase accepts this format
+    return dtLocal.toUtc().toIso8601String();
   }
 
   /// -------- Pickers ----------
@@ -77,13 +77,14 @@ class _LabInfoState extends State<LabInfo> {
         widget.labData["class_name"]?.toString() ??
         "";
 
-    /// ------- Try parse stored data -------
+    /// ------- Try parse stored data (convert to local for UI) -------
     final fromTimeIso = widget.labData["from_time"] ?? widget.labData["from"];
     final toTimeIso = widget.labData["to_time"] ?? widget.labData["to"];
 
     if (fromTimeIso != null) {
-      final dt = DateTime.tryParse(fromTimeIso);
-      if (dt != null) {
+      final dtRaw = DateTime.tryParse(fromTimeIso.toString());
+      if (dtRaw != null) {
+        final dt = dtRaw.toLocal();
         startTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
         selectedDate = DateTime(dt.year, dt.month, dt.day);
       } else {
@@ -100,8 +101,9 @@ class _LabInfoState extends State<LabInfo> {
     }
 
     if (toTimeIso != null) {
-      final dt = DateTime.tryParse(toTimeIso);
-      if (dt != null) {
+      final dtRaw = DateTime.tryParse(toTimeIso.toString());
+      if (dtRaw != null) {
+        final dt = dtRaw.toLocal();
         endTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
         selectedDate ??= DateTime(dt.year, dt.month, dt.day);
       } else {
@@ -139,9 +141,10 @@ class _LabInfoState extends State<LabInfo> {
     // priority: use exact stored to_time ISO if present
     final toIso = widget.labData["to_time"] ?? widget.labData["to"];
     if (toIso != null) {
-      final dt = DateTime.tryParse(toIso.toString());
-      if (dt != null) {
-        _scheduleReleaseAt(dt);
+      final dtRaw = DateTime.tryParse(toIso.toString());
+      if (dtRaw != null) {
+        final localTarget = dtRaw.toLocal();
+        _scheduleReleaseAt(localTarget);
         return;
       }
     }
@@ -159,7 +162,7 @@ class _LabInfoState extends State<LabInfo> {
     }
   }
 
-  /// Schedule a Timer to run at targetDateTime.
+  /// Schedule a Timer to run at targetDateTime (local).
   /// It will call provider.releaseLab(...) and update local UI.
   void _scheduleReleaseAt(DateTime target) {
     timer?.cancel();
@@ -317,18 +320,32 @@ class _LabInfoState extends State<LabInfo> {
                   return;
                 }
 
-                // -------- Convert to ISO for Supabase --------
-                final fromIso =
-                    _buildIsoDateTime(selectedDate!, startTime!);
-                final toIso =
-                    _buildIsoDateTime(selectedDate!, endTime!);
+                // -------- Build local DateTimes from pickers --------
+                final localFrom = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  startTime!.hour,
+                  startTime!.minute,
+                );
+                final localTo = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  endTime!.hour,
+                  endTime!.minute,
+                );
+
+                // -------- Convert to UTC ISO for Supabase (store normalized) --------
+                final fromIsoUtc = localFrom.toUtc().toIso8601String();
+                final toIsoUtc = localTo.toUtc().toIso8601String();
 
                 /// -------- Call Supabase --------
                 final ok = await labProvider.bookLab(
                   widget.labId,
                   classController.text,
-                  fromIso,
-                  toIso,
+                  fromIsoUtc,
+                  toIsoUtc,
                 );
 
                 if (!ok) {
@@ -336,24 +353,24 @@ class _LabInfoState extends State<LabInfo> {
                   return;
                 }
 
-                /// -------- Update local UI --------
+                /// -------- Update local UI (display uses local times) --------
                 setState(() {
                   labData["status"] = "booked";
                   labData["bookedBy"] = widget.engineerName;
                   labData["className"] = classController.text;
-                  labData["from"] = _formatTime(startTime!);
-                  labData["to"] = _formatTime(endTime!);
-                  labData["from_time"] = fromIso;
-                  labData["to_time"] = toIso;
+                  labData["from"] = _formatTime(startTime!); // local display
+                  labData["to"] = _formatTime(endTime!); // local display
+                  labData["from_time"] = fromIsoUtc; // stored UTC
+                  labData["to_time"] = toIsoUtc; // stored UTC
                   labData["date"] = selectedDate?.toIso8601String();
                 });
 
-                // schedule release at toIso
-                final parsedTo = DateTime.tryParse(toIso);
+                // schedule release at parsedTo (convert stored UTC to local for Timer)
+                final parsedTo = DateTime.tryParse(toIsoUtc);
                 if (parsedTo != null) {
-                  _scheduleReleaseAt(parsedTo);
+                  _scheduleReleaseAt(parsedTo.toLocal());
                 } else {
-                  // fallback: schedule using selectedDate + endTime
+                  // fallback: schedule using selectedDate + endTime (local)
                   final fallback = DateTime(
                     selectedDate!.year,
                     selectedDate!.month,
