@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../util/app_color.dart';
 import '../../viewmodel/device_provider.dart';
 import 'engineer_screen.dart';
+import 'labs_list_screen.dart';
 import 'student_screen.dart';
 
 class FilterScreen extends StatelessWidget {
@@ -172,7 +173,7 @@ class FilterScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const StudentScreen(),
+                      builder: (context) => const LabsListScreen(),
                     ),
                   );
                 });

@@ -9,6 +9,7 @@ class AppColor {
   static Color card = Color(0xffffffff);
   static Color border = Color(0xffe3e8e7);
   static Color repair = Color.fromARGB(255, 237, 116, 107);
+  static Color black = Color.fromARGB(255, 0, 0, 0);
 
   static Color textPrimary = Color(0xff0f2a2a);
   static Color textsecondary = Color.fromARGB(255, 255, 255, 255);

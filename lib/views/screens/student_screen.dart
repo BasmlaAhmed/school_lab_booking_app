@@ -1,4 +1,3 @@
-// views/screens/student_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,7 +7,8 @@ import '../../viewmodel/device_provider.dart';
 import 'student_profile_screen.dart';
 
 class StudentScreen extends StatefulWidget {
-  const StudentScreen({super.key});
+  final String labId;
+  const StudentScreen({super.key, required this.labId});
 
   @override
   State<StudentScreen> createState() => _StudentScreenState();
@@ -17,278 +17,300 @@ class StudentScreen extends StatefulWidget {
 class _StudentScreenState extends State<StudentScreen> {
   Map<String, Timer> timers = {};
 
-  @override
-  void initState() {
-    super.initState();
-    // Load latest devices when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DeviceProvider>(context, listen: false).fetchDevices();
-    });
-  }
+ @override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Provider.of<DeviceProvider>(context, listen: false)
+        .fetchDevices(labId: widget.labId); // <--- هنا بتمرير labId
+  });
+}
+
 
   void _showBookingDialog(
     BuildContext context,
     String deviceName,
     Map<String, dynamic> deviceData,
-  ) {
+  ) async {
     final TextEditingController notesController = TextEditingController();
     DateTime? selectedDate;
     TimeOfDay? selectedFrom;
     TimeOfDay? selectedTo;
 
-    // حماية إضافية: لو الجهاز مش متاح مانعرضش الحوار للحجز
     final status = (deviceData['status'] ?? 'available').toString();
-    if (status != 'available') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            status == 'not_working'
-                ? 'This device is reported as not working — cannot book.'
-                : 'This device is not available for booking.',
-          ),
-        ),
-      );
-      return;
-    }
+    if (status == 'not_working') return; // فقط not_working تمنع الحجز
 
     showDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (ctx, setStateDialog) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  title: Text(
-                    "Book $deviceName",
-                    style: TextStyle(
-                      color: AppColor.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  content: SizedBox(
-                    height: 135.h,
-                    child: Column(
-                      children: [
-                        // TextField(
-                        //   controller: notesController,
-                        //   decoration: InputDecoration(
-                        //     labelText: "Notes (optional)",
-                        //     border: OutlineInputBorder(
-                        //       borderRadius: BorderRadius.circular(12.r),
-                        //     ),
-                        //   ),
-                        // ),
-                        // SizedBox(height: 8.h),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null)
-                              setStateDialog(() => selectedDate = picked);
-                          },
-                          child: Text(
-                            selectedDate == null
-                                ? "Select Date"
-                                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                            style: TextStyle(color: AppColor.textPrimary),
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null)
-                              setStateDialog(() => selectedFrom = picked);
-                          },
-                          child: Text(
-                            selectedFrom == null
-                                ? "Select Start Time"
-                                : "From: ${selectedFrom!.format(context)}",
-                            style: TextStyle(color: AppColor.textPrimary),
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null)
-                              setStateDialog(() => selectedTo = picked);
-                          },
-                          child: Text(
-                            selectedTo == null
-                                ? "Select End Time"
-                                : "To: ${selectedTo!.format(context)}",
-                            style: TextStyle(color: AppColor.textPrimary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        "Cancel",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.primaryDark,
-                      ),
-                      onPressed: () async {
-                        if (selectedDate == null ||
-                            selectedFrom == null ||
-                            selectedTo == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Please complete all fields"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // Build DateTime objects
-                        final fromDate = DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedFrom!.hour,
-                          selectedFrom!.minute,
-                        );
-
-                        final toDate = DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedTo!.hour,
-                          selectedTo!.minute,
-                        );
-
-                        // extra safety: ensure from < to
-                        if (!fromDate.isBefore(toDate)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "End time must be after start time.",
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // call provider to book on server
-                        final success = await Provider.of<DeviceProvider>(
-                          context,
-                          listen: false,
-                        ).bookDeviceOnServer(deviceName, {
-                          'from': fromDate,
-                          'to': toDate,
-                          'date': selectedDate,
-                          'notes': notesController.text,
-                        });
-
-                        if (success) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Booked successfully")),
-                          );
-                        } else {
-                          await Provider.of<DeviceProvider>(
-                            context,
-                            listen: false,
-                          ).fetchDevices();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "Booking failed — maybe already booked or RLS denied",
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: Text(
-                        "Confirm",
-                        style: TextStyle(color: AppColor.textsecondary),
-                      ),
-                    ),
-                  ],
-                ),
+      builder: (context) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
           ),
+          title: Text(
+            "Book $deviceName",
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium!.color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SizedBox(
+            height: 135.h,
+            child: Column(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedDate = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedDate == null
+                        ? "Select Date"
+                        : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedFrom = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedFrom == null
+                        ? "Select Start Time"
+                        : "From: ${selectedFrom!.format(context)}",
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedTo = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedTo == null
+                        ? "Select End Time"
+                        : "To: ${selectedTo!.format(context)}",
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.primaryDark,
+              ),
+              onPressed: () async {
+                if (selectedDate == null ||
+                    selectedFrom == null ||
+                    selectedTo == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please complete all fields")),
+                  );
+                  return;
+                }
+
+                final fromDate = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  selectedFrom!.hour,
+                  selectedFrom!.minute,
+                );
+
+                final toDate = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  selectedTo!.hour,
+                  selectedTo!.minute,
+                );
+
+                if (!fromDate.isBefore(toDate)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("End time must be after start time."),
+                    ),
+                  );
+                  return;
+                }
+
+                final success =
+                    await Provider.of<DeviceProvider>(
+                      context,
+                      listen: false,
+                    ).bookDeviceOnServer(deviceName, {
+                      'from': fromDate,
+                      'to': toDate,
+                      'notes': notesController.text,
+                    });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? "Booked successfully" : "Booking failed",
+                    ),
+                  ),
+                );
+              },
+              child: Text(
+                "Confirm",
+                style: TextStyle(color: AppColor.textsecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
- void _showReportDialog(BuildContext parentContext, String deviceName) {
-  final TextEditingController reasonCtrl = TextEditingController();
+  void _showReportDialog(BuildContext context, String deviceName) async {
+    final TextEditingController otherController = TextEditingController();
+    String? selectedIssue;
 
-  showDialog(
-    context: parentContext,
-    builder: (dialogContext) => AlertDialog(
-      title: Text("Report Issue for $deviceName"),
-      content: TextField(
-        controller: reasonCtrl,
-        decoration: InputDecoration(
-          labelText: "Reason",
-          hintText: "e.g. No display / Keyboard broken",
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: Text("Report Issue for $deviceName"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<String>(
+                value: selectedIssue,
+                hint: const Text('Select issue type'),
+                isExpanded: true,
+                items:
+                    ['Mouse issue', 'Keyboard issue', 'Cable issue', 'Others']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                onChanged: (val) {
+                  setStateDialog(() => selectedIssue = val);
+                },
+              ),
+              if (selectedIssue == 'Others')
+                TextField(
+                  controller: otherController,
+                  decoration: const InputDecoration(
+                    hintText: 'Describe the issue',
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedIssue == null ||
+                    (selectedIssue == 'Others' &&
+                        otherController.text.trim().isEmpty)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please provide issue type or description"),
+                    ),
+                  );
+                  return;
+                }
+
+                final reason = selectedIssue == 'Others'
+                    ? otherController.text.trim()
+                    : selectedIssue!;
+
+                Navigator.pop(dialogContext);
+
+                final ok = await Provider.of<DeviceProvider>(
+                  context,
+                  listen: false,
+                ).reportIssueOnServer(deviceName, reason);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok ? "Reported — thank you" : "Report failed",
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Report"),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text("Cancel")),
-        ElevatedButton(
-          onPressed: () async {
-            final reason = reasonCtrl.text.trim();
-            if (reason.isEmpty) {
-              // Use parentContext (NOT dialogContext) to show SnackBar
-              ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text("Please enter a reason"))
-              );
-              return;
-            }
+    );
+  }
 
-            // close dialog using dialogContext
-            Navigator.pop(dialogContext);
+  String _buildBookedLine({
+    required String studentName,
+    required String studentEmail,
+    required dynamic from,
+    required dynamic to,
+  }) {
+    final who = studentName.isNotEmpty
+        ? studentName
+        : (studentEmail.isNotEmpty ? studentEmail : 'Another student');
+    final fromStr = _formatDisplay(from);
+    final toStr = _formatDisplay(to);
+    if (fromStr.isEmpty || toStr.isEmpty) return "Booked by $who";
+    return "Booked by $who ($fromStr - $toStr)";
+  }
 
-            // call provider using parentContext
-            final ok = await Provider.of<DeviceProvider>(parentContext, listen: false)
-                .reportIssueOnServer(deviceName, reason);
+  bool _isReasonValid(String? reason) {
+    if (reason == null) return false;
+    final r = reason.trim();
+    if (r.isEmpty) return false;
 
-            // show result using parentContext
-            if (ok) {
-              ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text("Reported — thank you"))
-              );
-            } else {
-              ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text("Report failed"))
-              );
-            }
-          },
-          child: Text("Report"),
-        ),
-      ],
-    ),
-  );
-}
+    const allowed = {'Mouse issue', 'Keyboard issue', 'Cable issue', 'Others'};
+    if (allowed.contains(r)) return true;
 
+    return r.length >= 3; // تجاهل قيم قصيرة جدًا
+  }
 
   Widget _deviceBox(BuildContext context, Map<String, dynamic> device) {
-    String status = (device["status"] ?? 'available').toString();
-    Color bg = Colors.white;
-    Color border = Colors.grey.shade300;
-    Color txt = AppColor.textPrimary;
+    final status = (device['status'] ?? 'available').toString();
+    final labName = (device['lab_name'] ?? '').toString().trim();
+    final rawReason = (device['reason'] ?? '').toString().trim();
+    final reason = _isReasonValid(rawReason) ? rawReason : null;
+    final studentName = (device['student_name'] ?? '').toString().trim();
+    final studentEmail = (device['student_email'] ?? '').toString().trim();
+
+    Color bg = Theme.of(context).cardColor;
+    Color border = Theme.of(context).dividerColor;
 
     if (status == "booked") {
       bg = AppColor.booked.withOpacity(0.3);
@@ -298,15 +320,13 @@ class _StudentScreenState extends State<StudentScreen> {
       border = AppColor.repair;
     }
 
-    // grab notes (may be null / empty)
-    final notes = (device['notes'] ?? '').toString().trim();
+    final canTapToBook = status != "not_working"; // يمكن الحجز مهما كان reason
 
     return Expanded(
       child: InkWell(
-        onTap:
-            status == "available"
-                ? () => _showBookingDialog(context, device["name"], device)
-                : null,
+        onTap: canTapToBook
+            ? () => _showBookingDialog(context, device["name"], device)
+            : null,
         child: Container(
           padding: EdgeInsets.all(12.r),
           margin: EdgeInsets.symmetric(horizontal: 5.w),
@@ -318,165 +338,85 @@ class _StudentScreenState extends State<StudentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Device name
               Text(
                 device["name"] ?? '',
                 style: TextStyle(
-                  color: txt,
-                  fontWeight: FontWeight.bold,
                   fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyMedium!.color,
                 ),
               ),
-
-              // Lab name (if exists)
-              if ((device['lab_name'] ?? '').toString().isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(top: 6.h, bottom: 4.h),
+              SizedBox(height: 4.h),
+              if (labName.isNotEmpty)
+                Text(
+                  "Lab: $labName",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
+                  ),
+                ),
+              SizedBox(height: 4.h),
+              if (status == "available")
+                Text(
+                  "Available",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
+                  ),
+                )
+              else if (status == "booked")
+                Text(
+                  _buildBookedLine(
+                    studentName: studentName,
+                    studentEmail: studentEmail,
+                    from: device['from'],
+                    to: device['to'],
+                  ),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
+                  ),
+                )
+              else
+                Text(
+                  "Not Working",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
+                  ),
+                ),
+              if ((status == 'not_working' ||
+                      (status != 'not_working' && reason != null)) &&
+                  reason != null)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(6.r),
+                  margin: EdgeInsets.only(top: 5.h),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
                   child: Text(
-                    device['lab_name'].toString(),
-                    style: TextStyle(
-                      color: AppColor.textPrimary.withOpacity(0.9),
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w600,
+                    "Issue: $reason",
+                    style: TextStyle(fontSize: 12.sp),
+                  ),
+                ),
+              if (status != "not_working")
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: TextButton.icon(
+                    onPressed: () => _showReportDialog(context, device['name']),
+                    icon: const Icon(Icons.report_problem, color: Colors.red),
+                    label: const Text(
+                      "Report",
+                      style: TextStyle(color: Colors.red),
                     ),
                   ),
                 ),
-
-              SizedBox(height: 5.h),
-
-              // status text
-              Text(
-                status == "available"
-                    ? "Available"
-                    : status == "booked"
-                    ? "Booked"
-                    : "Not Working",
-                style: TextStyle(
-                  color: txt,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              if (status == "booked")
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 3.h),
-                    Text(
-                      "By: ${device["student"] ?? 'Unknown'}",
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        color: AppColor.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      "From ${_formatDisplay(device["from"])} - To ${_formatDisplay(device["to"])}",
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: AppColor.textPrimary.withOpacity(0.8),
-                      ),
-                    ),
-                    // show notes if present
-                    if (notes.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          notes,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColor.textPrimary.withOpacity(0.9),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-
-              if (status == "not_working")
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      device["reason"] ?? 'Reported issue',
-                      style: TextStyle(color: AppColor.repair, fontSize: 11.sp),
-                    ),
-                    if (notes.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          notes,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColor.textPrimary.withOpacity(0.9),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              SizedBox(height: 10.h),
-              // small action row: Report / Release (only show Report when available or booked)
-              Align(
-                alignment: Alignment.bottomRight,
-                child: InkWell(
-                  onTap: () {
-                    _showReportDialog(context, device['name']);
-                  },
-                  child: Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(5.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Report",
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 5.w),
-                          // Report button (always available)
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                            icon: Icon(
-                              Icons.report_problem,
-                              size: 18.sp,
-                              color: AppColor.repair,
-                            ),
-                            onPressed:
-                                () =>
-                                    _showReportDialog(context, device['name']),
-                            tooltip: 'Report issue',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -502,12 +442,17 @@ class _StudentScreenState extends State<StudentScreen> {
       margin: EdgeInsets.only(bottom: 15.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.grey.shade300),
+        color: Theme.of(context).cardColor,
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
-        children: [_deviceBox(context, pair[0]), _deviceBox(context, pair[1])],
+        children: [
+          _deviceBox(context, pair[0]),
+          pair.length > 1
+              ? _deviceBox(context, pair[1])
+              : Expanded(child: Container()),
+        ],
       ),
     );
   }
@@ -516,9 +461,9 @@ class _StudentScreenState extends State<StudentScreen> {
   Widget build(BuildContext context) {
     final deviceProvider = Provider.of<DeviceProvider>(context);
 
-    // افصل الأجهزة على شكل أزواج (نفس UI القديم)
     List<List<Map<String, dynamic>>> devicePairs = [];
     List<Map<String, dynamic>> temp = [];
+
     deviceProvider.devices.forEach((key, value) {
       temp.add({"name": key, ...value});
       if (temp.length == 2) {
@@ -529,13 +474,16 @@ class _StudentScreenState extends State<StudentScreen> {
     if (temp.isNotEmpty) devicePairs.add(List.from(temp));
 
     return Scaffold(
-      backgroundColor: AppColor.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: AppColor.textPrimary),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Theme.of(context).textTheme.bodyMedium!.color,
+          ),
         ),
         actions: [
           Padding(
@@ -545,14 +493,13 @@ class _StudentScreenState extends State<StudentScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (_) => StudentProfileScreen(
-                          name: "Student Name",
-                          email: "name@student.edu",
-                          studentId: "20215501",
-                          studentClass: "5A",
-                          image: "",
-                        ),
+                    builder: (_) => const StudentProfileScreen(
+                      name: "Student Name",
+                      email: "name@student.edu",
+                      studentId: "20215501",
+                      studentClass: "5A",
+                      image: "",
+                    ),
                   ),
                 );
               },
@@ -574,18 +521,19 @@ class _StudentScreenState extends State<StudentScreen> {
               "PC Booking",
               style: TextStyle(
                 fontSize: 32.sp,
-                color: AppColor.textPrimary,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyMedium!.color,
               ),
             ),
             SizedBox(height: 20.h),
             Expanded(
-              child: ListView.builder(
-                itemCount: devicePairs.length,
-                itemBuilder:
-                    (context, index) =>
-                        _pairContainer(context, devicePairs[index]),
-              ),
+              child: devicePairs.isEmpty
+                  ? const Center(child: Text("No devices found"))
+                  : ListView.builder(
+                      itemCount: devicePairs.length,
+                      itemBuilder: (context, index) =>
+                          _pairContainer(context, devicePairs[index]),
+                    ),
             ),
           ],
         ),

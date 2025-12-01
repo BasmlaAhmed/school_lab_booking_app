@@ -1,8 +1,10 @@
+import 'package:intl/intl.dart';
+
 class LabModel {
   final String id;
-  final String name;
+  final String name; // lab name
   final String status;
-  final String? bookedBy;
+  final String? bookedBy; // user name
   final String? className;
   final String? fromTime;
   final String? toTime;
@@ -22,26 +24,12 @@ class LabModel {
     if (iso == null) return null;
 
     try {
-      String cleaned = iso.toString().trim();
+      final dt = DateTime.parse(iso);
 
-      // إذا كان الوقت فقط بدون تاريخ 14:00 أو 14:00:00
-      if (RegExp(r'^\d{2}:\d{2}').hasMatch(cleaned)) {
-        cleaned = "2025-01-01T$cleaned";
-      }
+      // استخدم DateFormat عشان تظبط الشكل
+      final formatted = DateFormat('dd/MM/yyyy - hh:mm a').format(dt); // لو عايزه اشيل الديت هيبقي من دي
 
-      // لو الشكل فيه مسافة بدل T
-      if (cleaned.contains(" ") && !cleaned.contains("T")) {
-        cleaned = cleaned.replaceFirst(" ", "T");
-      }
-
-      // Parse time
-      final dt = DateTime.parse(cleaned);
-
-      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-      final minute = dt.minute.toString().padLeft(2, '0');
-      final ampm = dt.hour >= 12 ? "PM" : "AM";
-
-      return "$hour:$minute $ampm";
+      return formatted;
     } catch (e) {
       print("FORMAT ERROR → $iso");
       return iso; // fallback
@@ -56,10 +44,10 @@ class LabModel {
 
       bookedBy:
           data['Users'] != null &&
-                  data['Users'] is List &&
-                  data['Users'].isNotEmpty
-              ? data['Users'][0]['name']
-              : null,
+              data['Users'] is List &&
+              data['Users'].isNotEmpty
+          ? data['Users'][0]['name']
+          : null,
 
       className: data['class_name'],
 

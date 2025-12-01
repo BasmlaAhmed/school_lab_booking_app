@@ -23,56 +23,56 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> login() async {
-  if (_userEmail == null || _password == null) return false;
+    if (_userEmail == null || _password == null) return false;
 
-  try {
-    final res = await _supabase.auth.signInWithPassword(
-      email: _userEmail!,
-      password: _password!,
-    );
+    try {
+      final res = await _supabase.auth.signInWithPassword(
+        email: _userEmail!,
+        password: _password!,
+      );
 
-    if (res.user == null) {
-      debugPrint('Login failed: ${res}');
+      if (res.user == null) {
+        debugPrint('Login failed: $res');
+        return false;
+      }
+
+      // optional delay
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final current = _supabase.auth.currentUser;
+      debugPrint('After signIn — auth.currentUser = $current');
+
+      // fetch profile from Users table
+      final profile = await _supabase
+          .from('Users')
+          .select()
+          .eq('id', res.user!.id)
+          .maybeSingle();
+
+      _userName = profile?['name'] as String?;
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      debugPrint('Login exception: $e\n$st');
       return false;
     }
-
-    // optional: small delay to ensure session persisted
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final current = _supabase.auth.currentUser;
-    debugPrint('After signIn — auth.currentUser = $current');
-
-    // now fetch user profile or proceed
-    final profile = await _supabase.from('Users').select().eq('id', res.user!.id).maybeSingle();
-    _userName = profile?['name'] as String?;
-    notifyListeners();
-    return true;
-  } catch (e, st) {
-    debugPrint('Login exception: $e\n$st');
-    return false;
   }
-}
 
   Future<bool> signUp(String name, String email, String password) async {
-    // Validate inputs early
     if (email.trim().isEmpty || password.isEmpty) {
-      print('Email or password empty');
+      debugPrint('Email or password empty');
       return false;
     }
 
     try {
-      // Print for debugging — تأكد أن القيم توصل هنا
-      print('Signing up: email=$email, name=$name');
+      debugPrint('Signing up: email=$email, name=$name');
 
-      // استدعاء الـ signUp
       final res = await _supabase.auth.signUp(
         email: email.trim(),
         password: password,
       );
 
-      // إذا ال user موجود (يعني تم إنشاء حساب)
       if (res.user != null) {
-        // insert into users table — تأكد اسم الجدول (users vs Users)
         await _supabase.from('Users').insert({
           'id': res.user!.id,
           'name': name,
@@ -86,26 +86,27 @@ class UserProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        // لو confirm email مفعل، user ممكن يرجع ولكن session null — تحقق من ذلك
-        print('Signed up but no user returned. Check email confirm settings.');
+        debugPrint(
+          'Signed up but no user returned. Check email confirm settings.',
+        );
         return false;
       }
     } catch (e, st) {
-      // ممكن ترجع AuthApiException أو PostgrestException
-      print('SignUp exception: $e\n$st');
-
-      // أمثلة للتحقق السريع:
-      // - لو الرسالة فيها anonymous_provider_disabled => غالبًا الإيميل/الباسوورد موصلتش (null/empty)
-      // - لو الرسالة فيها PGRST205 => اسم الجدول غلط عند ال insert
-
+      debugPrint('SignUp exception: $e\n$st');
       return false;
     }
   }
 
   Future<void> logout() async {
-    await _supabase.auth.signOut();
+    try {
+      await _supabase.auth.signOut();
+    } catch (e) {
+      debugPrint('Supabase signOut error: $e');
+    }
+
     _userEmail = null;
     _userName = null;
+    _password = null;
     notifyListeners();
   }
 }

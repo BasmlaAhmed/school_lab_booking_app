@@ -17,14 +17,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String email = "";
   String password = "";
 
-  bool showPassword = false; // 👈 للتحكم في إظهار الباسورد
+  bool showPassword = false;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final userProvider = Provider.of<UserProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppColor.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
         child: Column(
@@ -33,7 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             Text(
               "Create Account",
               style: TextStyle(
-                color: AppColor.textPrimary,
+                color: isDark ? Colors.white : AppColor.primaryDark,
                 fontWeight: FontWeight.bold,
                 fontSize: 35.sp,
               ),
@@ -42,7 +44,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             Text(
               "Sign up to continue",
               style: TextStyle(
-                color: AppColor.textPrimary.withOpacity(0.7),
+                color: isDark
+                    ? Colors.white70
+                    : AppColor.textPrimary.withOpacity(0.7),
                 fontSize: 16.sp,
               ),
             ),
@@ -85,7 +89,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             /// SIGN UP BUTTON
             InkWell(
               onTap: () async {
-                bool success = await userProvider.signUp(name, email, password);
+                bool success = await userProvider.signUp(
+                  name,
+                  email,
+                  password,
+                );
+
                 if (success) {
                   Navigator.pushReplacement(
                     context,
@@ -128,7 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text(
                   "Already have an account?",
                   style: TextStyle(
-                    color: AppColor.textPrimary,
+                    color: isDark ? Colors.white : Colors.black,
                     fontSize: 14.sp,
                   ),
                 ),
@@ -152,7 +161,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  /// 🔥 TextField reusable widget with password toggle
+  /// Reusable TextField
   Widget buildField({
     required String label,
     required IconData icon,
@@ -161,26 +170,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
     bool obscureText = false,
     VoidCallback? onTogglePassword,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextField(
       obscureText: obscureText,
       onChanged: onChanged,
+
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black,
+      ),
+
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
-        prefixIcon: Icon(icon, color: AppColor.primaryDark),
-        labelText: label,
-        labelStyle: TextStyle(color: AppColor.primaryDark),
+        fillColor: isDark ? Colors.grey.shade900 : Colors.white,
 
-        /// 👇 زر إظهار/إخفاء الباسورد
-        suffixIcon:
-            isPassword
-                ? IconButton(
-                  onPressed: onTogglePassword,
-                  icon: Icon(
-                    obscureText ? Icons.visibility_off : Icons.visibility,
-                  ),
-                )
-                : null,
+        prefixIcon: Icon(icon, color: AppColor.primaryDark),
+
+        labelText: label,
+        labelStyle: TextStyle(
+          color: isDark ? Colors.white70 : AppColor.primaryDark,
+        ),
+
+        suffixIcon: isPassword
+            ? IconButton(
+                onPressed: onTogglePassword,
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+              )
+            : null,
 
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15.r),
@@ -188,7 +207,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15.r),
-          borderSide: BorderSide(color: AppColor.primarylight, width: 2),
+          borderSide: BorderSide(
+            color: AppColor.primarylight,
+            width: 2,
+          ),
         ),
       ),
     );

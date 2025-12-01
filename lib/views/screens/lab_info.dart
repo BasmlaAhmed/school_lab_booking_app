@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart' as p;
+import 'package:provider/provider.dart';
+import '../../model/lab_model.dart';
 import '../../util/app_color.dart';
 import '../../viewmodel/lab_provider.dart';
+import '../../viewmodel/theme_provider.dart';
 
 class LabInfo extends StatefulWidget {
   final String labId; // ← مهم: ID اللاب من Supabase
@@ -16,7 +19,7 @@ class LabInfo extends StatefulWidget {
     required this.labId,
     required this.labName,
     required this.labData,
-    required this.engineerName,
+    required this.engineerName, required LabModel lab,
   });
 
   @override
@@ -73,7 +76,8 @@ class _LabInfoState extends State<LabInfo> {
   void initState() {
     super.initState();
 
-    classController.text = widget.labData["className"]?.toString() ??
+    classController.text =
+        widget.labData["className"]?.toString() ??
         widget.labData["class_name"]?.toString() ??
         "";
 
@@ -93,8 +97,9 @@ class _LabInfoState extends State<LabInfo> {
           final parts = fromTimeIso.split(':');
           if (parts.length >= 2) {
             startTime = TimeOfDay(
-                hour: int.tryParse(parts[0]) ?? 0,
-                minute: int.tryParse(parts[1]) ?? 0);
+              hour: int.tryParse(parts[0]) ?? 0,
+              minute: int.tryParse(parts[1]) ?? 0,
+            );
           }
         }
       }
@@ -112,8 +117,9 @@ class _LabInfoState extends State<LabInfo> {
           final parts = toTimeIso.split(':');
           if (parts.length >= 2) {
             endTime = TimeOfDay(
-                hour: int.tryParse(parts[0]) ?? 0,
-                minute: int.tryParse(parts[1]) ?? 0);
+              hour: int.tryParse(parts[0]) ?? 0,
+              minute: int.tryParse(parts[1]) ?? 0,
+            );
           }
         }
       }
@@ -183,8 +189,10 @@ class _LabInfoState extends State<LabInfo> {
   /// Perform release: call provider to update DB, then update local UI.
   Future<void> _releaseNow() async {
     try {
-      await p.Provider.of<LabProvider>(context, listen: false)
-          .releaseLab(widget.labId);
+      await p.Provider.of<LabProvider>(
+        context,
+        listen: false,
+      ).releaseLab(widget.labId);
     } catch (e) {
       // ignore errors but print for debugging
       debugPrint('releaseNow error: $e');
@@ -207,9 +215,11 @@ class _LabInfoState extends State<LabInfo> {
   Widget build(BuildContext context) {
     final labProvider = p.Provider.of<LabProvider>(context, listen: false);
     final labData = widget.labData;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: AppColor.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: EdgeInsets.all(15.w),
         child: Column(
@@ -223,27 +233,33 @@ class _LabInfoState extends State<LabInfo> {
               style: TextStyle(
                 fontSize: 32.sp,
                 fontWeight: FontWeight.bold,
-                color: AppColor.textPrimary,
+                color: isDark ? Colors.white : AppColor.textPrimary,
               ),
             ),
+
             SizedBox(height: 20.h),
 
             /// -------- Lab Status Card --------
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.r)),
+                borderRadius: BorderRadius.circular(15.r),
+              ),
               elevation: 3,
               child: ListTile(
-                leading: Icon(Icons.computer,
-                    color: AppColor.primaryDark, size: 35.sp),
+                leading: Icon(
+                  Icons.computer,
+                  color: AppColor.primaryDark,
+                  size: 35.sp,
+                ),
                 title: Text(
                   labData["status"] == "available"
                       ? "Available"
                       : "Booked by ${labData["bookedBy"] ?? "Unknown"}",
                   style: TextStyle(
-                      fontSize: 18.sp,
-                      color: AppColor.textPrimary,
-                      fontWeight: FontWeight.w600),
+                    fontSize: 18.sp,
+                    color: isDark ? Colors.white : AppColor.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 subtitle: labData["status"] == "available"
                     ? null
@@ -263,7 +279,8 @@ class _LabInfoState extends State<LabInfo> {
               decoration: InputDecoration(
                 labelText: "Class / Department",
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r)),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
               ),
             ),
 
@@ -279,6 +296,7 @@ class _LabInfoState extends State<LabInfo> {
                       selectedDate == null
                           ? "Pick Date"
                           : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                      isDark: isDark,
                     ),
                   ),
                 ),
@@ -290,6 +308,7 @@ class _LabInfoState extends State<LabInfo> {
                       startTime == null
                           ? "Start Time"
                           : _formatTime(startTime!),
+                      isDark: isDark,
                     ),
                   ),
                 ),
@@ -298,9 +317,8 @@ class _LabInfoState extends State<LabInfo> {
                   child: GestureDetector(
                     onTap: pickEndTime,
                     child: _box(
-                      endTime == null
-                          ? "End Time"
-                          : _formatTime(endTime!),
+                      endTime == null ? "End Time" : _formatTime(endTime!),
+                      isDark: isDark,
                     ),
                   ),
                 ),
@@ -395,9 +413,10 @@ class _LabInfoState extends State<LabInfo> {
                   child: Text(
                     "Book Lab",
                     style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.textPrimary),
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColor.textPrimary,
+                    ),
                   ),
                 ),
               ),
@@ -419,9 +438,10 @@ class _LabInfoState extends State<LabInfo> {
                   child: Text(
                     "Back",
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -433,24 +453,30 @@ class _LabInfoState extends State<LabInfo> {
   }
 
   /// ---------------- UI Helpers ----------------
-  Widget _box(String text) {
+  Widget _box(String text, {required bool isDark}) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 15.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Color(0xFF2C2C2C) : Colors.white,
         borderRadius: BorderRadius.circular(15.r),
         border: Border.all(color: AppColor.border),
       ),
       child: Center(
-        child: Text(text, style: TextStyle(fontSize: 16.sp)),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16.sp,
+            color: isDark ? Colors.white : AppColor.textPrimary,
+          ),
+        ),
       ),
     );
   }
 
   void _error(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   void _showSuccess() {
@@ -458,11 +484,15 @@ class _LabInfoState extends State<LabInfo> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r)),
-        title: Text("Booking Confirmed",
-            style: TextStyle(
-                color: AppColor.primaryDark,
-                fontWeight: FontWeight.bold)),
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        title: Text(
+          "Booking Confirmed",
+          style: TextStyle(
+            color: AppColor.primaryDark,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           "Your booking for ${widget.labName} is confirmed.",
           style: TextStyle(color: AppColor.textPrimary),
@@ -476,10 +506,11 @@ class _LabInfoState extends State<LabInfo> {
             child: Text(
               "OK",
               style: TextStyle(
-                  color: AppColor.primaryDark,
-                  fontWeight: FontWeight.bold),
+                color: AppColor.primaryDark,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

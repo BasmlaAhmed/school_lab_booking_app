@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+
 import '../../viewmodel/user_provider.dart';
 import '../../util/app_color.dart';
 import 'filter_screen.dart';
@@ -14,33 +15,28 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // controllers عشان القيم تفضل موجودة
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passController = TextEditingController();
 
   bool showPassword = false;
 
- @override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  emailController.text;
-  passController.text;
-
-   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.setEmail(emailController.text);
-    userProvider.setPassword(passController.text);
-  });
-}
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setEmail(emailController.text);
+      userProvider.setPassword(passController.text);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppColor.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
         child: Column(
@@ -49,7 +45,9 @@ void initState() {
             Text(
               "Welcome Back",
               style: TextStyle(
-                color: AppColor.textPrimary,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColor.primaryDark,
                 fontWeight: FontWeight.bold,
                 fontSize: 35.sp,
               ),
@@ -58,7 +56,9 @@ void initState() {
             Text(
               "Login to your account",
               style: TextStyle(
-                color: AppColor.textPrimary.withOpacity(0.7),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColor.textsecondary.withOpacity(0.7)
+                    : AppColor.textPrimary.withOpacity(0.7),
                 fontSize: 16.sp,
               ),
             ),
@@ -100,7 +100,7 @@ void initState() {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    const SnackBar(
                       content: Text("Login failed. Please try again."),
                       backgroundColor: Colors.redAccent,
                     ),
@@ -135,16 +135,20 @@ void initState() {
                 Text(
                   "Don't have an account?",
                   style: TextStyle(
-                    color: AppColor.textPrimary,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                     fontSize: 14.sp,
                   ),
                 ),
-                SizedBox(width: 5),
+                const SizedBox(width: 5),
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SignUpScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const SignUpScreen(),
+                      ),
                     );
                   },
                   child: Text(
@@ -178,21 +182,31 @@ void initState() {
       controller: controller,
       obscureText: obscureText,
       onChanged: onChanged,
+      style: TextStyle(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black,
+      ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey.shade900
+            : Colors.white,
         prefixIcon: Icon(icon, color: AppColor.primaryDark),
         labelText: label,
-        suffixIcon:
-            isPassword
-                ? IconButton(
-                  onPressed: onTogglePassword,
-                  icon: Icon(
-                    obscureText ? Icons.visibility_off : Icons.visibility,
-                  ),
-                )
-                : null,
-        labelStyle: TextStyle(color: AppColor.primaryDark),
+        suffixIcon: isPassword
+            ? IconButton(
+                onPressed: onTogglePassword,
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                ),
+              )
+            : null,
+        labelStyle: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white70
+              : AppColor.primaryDark,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15.r),
           borderSide: BorderSide(color: AppColor.border),
