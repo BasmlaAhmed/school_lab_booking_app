@@ -329,7 +329,7 @@ class _StudentScreenState extends State<StudentScreen> {
     const allowed = {'Mouse issue', 'Keyboard issue', 'Cable issue', 'Others'};
     if (allowed.contains(r)) return true;
 
-    return r.length >= 3;
+    return r.length >= 3; // تجاهل قيم قصيرة جدًا
   }
 
   Widget _deviceBox(BuildContext context, Map<String, dynamic> device) {
@@ -507,7 +507,7 @@ class _StudentScreenState extends State<StudentScreen> {
     }
   }
 
-  // pair container now expects exactly 2 children (second can be an empty placeholder)
+  // pair container now puts the cellLabel inside the big card
   Widget _pairContainer(
     BuildContext context,
     List<Map<String, dynamic>> pair,
@@ -517,6 +517,7 @@ class _StudentScreenState extends State<StudentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 🔹 اسم السيل فوق الكارد — نفس الستايل القديم بالظبط
         Padding(
           padding: EdgeInsets.only(left: 6.w, bottom: 8.h),
           child: Text(
@@ -528,6 +529,8 @@ class _StudentScreenState extends State<StudentScreen> {
             ),
           ),
         ),
+
+        // 🔹 الكارد الكبير
         Container(
           margin: EdgeInsets.only(bottom: 15.h),
           padding: EdgeInsets.all(12.r),
@@ -604,9 +607,22 @@ class _StudentScreenState extends State<StudentScreen> {
       }
     }
 
-    // Debug prints (optional)
-    // print('DEBUG: grouped letters = $sortedLetters');
-    // print('DEBUG: devicePairs length = ${devicePairs.length}');
+    // ---------------- compute lab display name ----------------
+    String labDisplayName() {
+      // try to find lab_name from any device
+      try {
+        for (final v in rawDevices.values) {
+          if (v is Map && v.containsKey('lab_name')) {
+            final ln = (v['lab_name'] ?? '').toString().trim();
+            if (ln.isNotEmpty) return ln;
+          }
+        }
+      } catch (_) {}
+      // fallback: you can return widget.labId or a default label
+      return ' ';
+    }
+
+    final headerTitle = labDisplayName();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -620,6 +636,13 @@ class _StudentScreenState extends State<StudentScreen> {
             color: Theme.of(context).textTheme.bodyMedium!.color,
           ),
         ),
+        // title: Text(
+        //   headerTitle,
+        //   style: TextStyle(
+        //     color: Theme.of(context).textTheme.bodyMedium!.color,
+        //     fontWeight: FontWeight.bold,
+        //   ),
+        // ),
         actions: [
           Padding(
             padding: EdgeInsets.only(right: 12.w),
@@ -653,8 +676,9 @@ class _StudentScreenState extends State<StudentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // The large title now shows the lab name too (keeps previous style)
             Text(
-              "PC Booking",
+              headerTitle,
               style: TextStyle(
                 fontSize: 32.sp,
                 fontWeight: FontWeight.bold,
