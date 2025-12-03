@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../../viewmodel/user_provider.dart';
 import '../../util/app_color.dart';
+
+// الشاشات اللي هتتنقلي ليها حسب الدور
 import 'filter_screen.dart';
 import 'sign_up_screen.dart';
+import 'super_admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -93,17 +96,34 @@ class _LoginScreenState extends State<LoginScreen> {
             InkWell(
               onTap: () async {
                 bool success = await userProvider.login();
-                if (success) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FilterScreen()),
-                  );
-                } else {
+
+                if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Login failed. Please try again."),
                       backgroundColor: Colors.redAccent,
                     ),
+                  );
+                  return;
+                }
+
+                // ---------------------------
+                // 🎯 التوجيه حسب الـ ROLE
+                // ---------------------------
+                if (userProvider.role == "super_admin") {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SuperAdminLabsScreen()),
+                  );
+                } else if (userProvider.role == "admin") {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SuperAdminLabsScreen()),
+                  );
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FilterScreen()),
                   );
                 }
               },

@@ -137,7 +137,7 @@ class StudentProfileScreen extends StatelessWidget {
                 SizedBox(height: 25.h),
 
                 // معلومات الطالب في مربعات info tiles
-                _infoTile("Student ID", studentId, isDark),
+                _infoTile("Student Code", studentId, isDark),
                 _infoTile("Class", studentClass, isDark),
 
                 SizedBox(height: 35.h),

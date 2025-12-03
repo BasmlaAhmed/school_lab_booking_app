@@ -20,21 +20,19 @@ class LabModel {
   });
 
   /// 🔥 دالة لتحويل ISO → وقت مقروء
-  static String? formatTime(String? iso) {
-    if (iso == null) return null;
+ static String? formatTime(String? iso) {
+  if (iso == null) return null;
 
-    try {
-      final dt = DateTime.parse(iso);
+  try {
+    final dt = DateTime.parse(iso).toLocal();  //  ← هنا أهم تعديل
 
-      // استخدم DateFormat عشان تظبط الشكل
-      final formatted = DateFormat('dd/MM/yyyy - hh:mm a').format(dt); // لو عايزه اشيل الديت هيبقي من دي
-
-      return formatted;
-    } catch (e) {
-      print("FORMAT ERROR → $iso");
-      return iso; // fallback
-    }
+    final formatted = DateFormat('dd/MM/yyyy - hh:mm a').format(dt);
+    return formatted;
+  } catch (e) {
+    print("FORMAT ERROR → $iso");
+    return iso; // fallback
   }
+}
 
   factory LabModel.fromMap(Map<String, dynamic> data) {
     return LabModel(

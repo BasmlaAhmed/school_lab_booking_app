@@ -10,6 +10,9 @@ class UserProvider extends ChangeNotifier {
   String? _userName;
   String? get userName => _userName;
 
+  String? _role;
+  String? get role => _role;
+
   String? _password;
 
   void setEmail(String email) {
@@ -36,21 +39,18 @@ class UserProvider extends ChangeNotifier {
         return false;
       }
 
-      // optional delay
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      final current = _supabase.auth.currentUser;
-      debugPrint('After signIn — auth.currentUser = $current');
-
-      // fetch profile from Users table
       final profile = await _supabase
           .from('Users')
           .select()
           .eq('id', res.user!.id)
           .maybeSingle();
 
-      _userName = profile?['name'] as String?;
-      notifyListeners();
+      if (profile != null) {
+        _userName = profile['name'];
+        _role = profile['role'];
+        notifyListeners();
+      }
+
       return true;
     } catch (e, st) {
       debugPrint('Login exception: $e\n$st');
@@ -59,14 +59,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> signUp(String name, String email, String password) async {
-    if (email.trim().isEmpty || password.isEmpty) {
-      debugPrint('Email or password empty');
-      return false;
-    }
-
     try {
-      debugPrint('Signing up: email=$email, name=$name');
-
       final res = await _supabase.auth.signUp(
         email: email.trim(),
         password: password,
@@ -83,29 +76,23 @@ class UserProvider extends ChangeNotifier {
 
         _userEmail = email.trim();
         _userName = name;
+        _role = 'student';
         notifyListeners();
         return true;
-      } else {
-        debugPrint(
-          'Signed up but no user returned. Check email confirm settings.',
-        );
-        return false;
       }
-    } catch (e, st) {
-      debugPrint('SignUp exception: $e\n$st');
+      return false;
+    } catch (e) {
+      debugPrint('SignUp exception: $e');
       return false;
     }
   }
 
   Future<void> logout() async {
-    try {
-      await _supabase.auth.signOut();
-    } catch (e) {
-      debugPrint('Supabase signOut error: $e');
-    }
+    await _supabase.auth.signOut();
 
     _userEmail = null;
     _userName = null;
+    _role = null;
     _password = null;
     notifyListeners();
   }

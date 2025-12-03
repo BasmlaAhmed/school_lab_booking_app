@@ -19,7 +19,8 @@ class LabInfo extends StatefulWidget {
     required this.labId,
     required this.labName,
     required this.labData,
-    required this.engineerName, required LabModel lab,
+    required this.engineerName,
+    required LabModel lab,
   });
 
   @override
@@ -76,8 +77,7 @@ class _LabInfoState extends State<LabInfo> {
   void initState() {
     super.initState();
 
-    classController.text =
-        widget.labData["className"]?.toString() ??
+    classController.text = widget.labData["className"]?.toString() ??
         widget.labData["class_name"]?.toString() ??
         "";
 
@@ -208,6 +208,7 @@ class _LabInfoState extends State<LabInfo> {
       widget.labData.remove("from_time");
       widget.labData.remove("to_time");
       widget.labData.remove("date");
+      classController.clear();
     });
   }
 
@@ -274,10 +275,25 @@ class _LabInfoState extends State<LabInfo> {
             SizedBox(height: 20.h),
 
             /// -------- Class Input --------
-            TextField(
-              controller: classController,
+            /// -------- Class Dropdown --------
+            DropdownButtonFormField<String>(
+              value:
+                  classController.text.isNotEmpty ? classController.text : null,
+              items: ["4A", "4B", "5A", "5B"]
+                  .map(
+                    (c) => DropdownMenuItem<String>(
+                      value: c,
+                      child: Text(c),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) {
+                setState(() {
+                  classController.text = val ?? "";
+                });
+              },
               decoration: InputDecoration(
-                labelText: "Class / Department",
+                labelText: "Class",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
                 ),

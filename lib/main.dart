@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'viewmodel/device_provider.dart';
 import 'viewmodel/lab_provider.dart';
@@ -18,12 +18,12 @@ Future<void> main() async {
   );
 
   runApp(
-    MultiProvider(
+    p.MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => LabProvider()),
-        ChangeNotifierProvider(create: (_) => DeviceProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        p.ChangeNotifierProvider(create: (_) => UserProvider()),
+        p.ChangeNotifierProvider(create: (_) => LabProvider()),
+        p.ChangeNotifierProvider(create: (_) => DeviceProvider()),
+        p.ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const MyApp(),
     ),
@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
 
-          themeMode: Provider.of<ThemeProvider>(context).themeMode,
+          themeMode:p.Provider.of<ThemeProvider>(context).themeMode,
 
           theme: ThemeData(
             brightness: Brightness.light,

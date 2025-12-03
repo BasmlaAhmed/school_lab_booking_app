@@ -162,6 +162,7 @@ class LabProvider extends ChangeNotifier {
         'booked_by': null,
         'from_time': null,
         'to_time': null,
+        'class_name': null,
       }).eq('id', labId);
 
       await fetchLabs();
