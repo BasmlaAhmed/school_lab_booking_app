@@ -34,37 +34,53 @@ class DeviceProvider with ChangeNotifier {
   }
 
   Future<void> _checkExpiredBookings() async {
-    final now = DateTime.now().toUtc();
+  final now = DateTime.now(); // Local time
 
-    for (final entry in devices.entries) {
-      final deviceName = entry.key;
-      final device = entry.value;
-      final toTimeStr = device['to'];
+  for (final entry in devices.entries) {
+    final deviceName = entry.key;
+    final device = entry.value;
 
-      if (toTimeStr != null && device['status'] == 'booked') {
-        final toTime = DateTime.tryParse(toTimeStr);
-        if (toTime != null && now.isAfter(toTime)) {
-          try {
-            await supabase
-                .from(devicesTable)
-                .update({
-                  'status': 'available',
-                  'booked_by': null,
-                  'from_time': null,
-                  'to_time': null,
-                  'reason': null,
-                  'reported_by': null,
-                })
-                .eq('name', deviceName);
-          } catch (e) {
-            _d('Error releasing device $deviceName: $e');
-          }
-        }
+    // ------------------------
+    // 🔥 Normalize "to_time"
+    // ------------------------
+    final rawTo = device['to'];
+
+    DateTime? toTime;
+
+    if (rawTo is DateTime) {
+      toTime = rawTo;
+    } else if (rawTo is String) {
+      try {
+        toTime = DateTime.parse(rawTo);
+      } catch (_) {
+        toTime = null;
       }
     }
 
-    await fetchDevices();
+    // ------------------------
+    // 🔥 Expired booking?
+    // ------------------------
+    if (toTime != null && device['status'] == 'booked') {
+      if (now.isAfter(toTime)) {
+        try {
+          await supabase.from(devicesTable).update({
+            'status': 'available',
+            'booked_by': null,
+            'from_time': null,
+            'to_time': null,
+            'reason': null,
+            'reported_by': null,
+          }).eq('name', deviceName);
+        } catch (e) {
+          _d('Error releasing device $deviceName: $e');
+        }
+      }
+    }
   }
+
+  await fetchDevices();
+}
+
 
   Future<void> fetchDevices({String? labId}) async {
     try {
@@ -94,9 +110,8 @@ class DeviceProvider with ChangeNotifier {
       }
 
       // جلب اليوزرز
-      final usersResp = await supabase
-          .from(usersTable)
-          .select('id, name, email');
+      final usersResp =
+          await supabase.from(usersTable).select('id, name, email');
       final Map<String, Map<String, String>> usersMap = {};
       if (usersResp is List) {
         for (final user in usersResp) {
@@ -142,8 +157,11 @@ class DeviceProvider with ChangeNotifier {
           'student': bookedByIdStr,
           'student_name': studentName,
           'student_email': studentEmail,
-          'from': item['from_time']?.toString(),
-          'to': item['to_time']?.toString(),
+          'from': item['from_time'] != null
+              ? DateTime.parse(item['from_time'])
+              : null,
+          'to':
+              item['to_time'] != null ? DateTime.parse(item['to_time']) : null,
           'reason': item['reason']?.toString(),
           'reported_by': reportedById,
         };
@@ -168,19 +186,12 @@ class DeviceProvider with ChangeNotifier {
       final status = devices[deviceName]?['status'] ?? 'available';
       if (status == 'not_working') return false;
 
-      await supabase
-          .from(devicesTable)
-          .update({
-            'status': 'booked',
-            'booked_by': currentUser.id,
-            'from_time': (bookingData['from'] as DateTime)
-                .toUtc()
-                .toIso8601String(),
-            'to_time': (bookingData['to'] as DateTime)
-                .toUtc()
-                .toIso8601String(),
-          })
-          .eq('name', deviceName);
+      await supabase.from(devicesTable).update({
+        'status': 'booked',
+        'booked_by': currentUser.id,
+        'from_time': bookingData['from'],
+        'to_time': bookingData['to'],
+      }).eq('name', deviceName);
 
       await fetchDevices();
       return true;
@@ -197,8 +208,8 @@ class DeviceProvider with ChangeNotifier {
 
       await supabase
           .from(devicesTable)
-          .update({'reason': reason, 'reported_by': currentUser.id})
-          .eq('name', deviceName);
+          .update({'reason': reason, 'reported_by': currentUser.id}).eq(
+              'name', deviceName);
 
       await fetchDevices();
       return true;

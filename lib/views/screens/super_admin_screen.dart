@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../util/app_color.dart';
 import '../../viewmodel/super_admin_view_mode.dart';
 import 'super_admin_device_screen.dart';
+import 'super_admin_profile_screen.dart';
 
 class SuperAdminLabsScreen extends StatefulWidget {
   const SuperAdminLabsScreen({super.key});
@@ -319,6 +321,50 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
           style: TextStyle(fontSize: 25.sp, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+      actions: [
+  // ===== REFRESH BUTTON =====
+  IconButton(
+    tooltip: "Refresh Labs",
+    icon: Icon(
+      Icons.refresh,
+      color: AppColor.primaryDark,
+      size: 26,
+    ),
+    onPressed: () async {
+      setState(() {}); // يعمل إعادة بناء للواجهة
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Refreshed")),
+      );
+    },
+  ),
+
+  SizedBox(width: 6.w),
+
+  // ===== PROFILE BUTTON =====
+  Padding(
+    padding: EdgeInsets.only(right: 12.w),
+    child: GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SuperAdminProfileScreen()),
+        );
+      },
+      child: CircleAvatar(
+        radius: 18.r,
+        backgroundColor: AppColor.primaryDark.withOpacity(0.1),
+        child: Icon(
+          Icons.person,
+          color: AppColor.primaryDark,
+          size: 22.sp,
+        ),
+      ),
+    ),
+  ),
+],
+
+
       ),
       body: SafeArea(
         child: FutureBuilder(

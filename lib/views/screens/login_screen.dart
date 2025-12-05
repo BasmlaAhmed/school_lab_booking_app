@@ -6,7 +6,9 @@ import '../../viewmodel/user_provider.dart';
 import '../../util/app_color.dart';
 
 // الشاشات اللي هتتنقلي ليها حسب الدور
+import 'engineer_screen.dart';
 import 'filter_screen.dart';
+import 'labs_list_screen.dart';
 import 'sign_up_screen.dart';
 import 'super_admin_screen.dart';
 
@@ -95,38 +97,46 @@ class _LoginScreenState extends State<LoginScreen> {
             /// LOGIN BUTTON
             InkWell(
               onTap: () async {
-                bool success = await userProvider.login();
+  bool success = await userProvider.login();
 
-                if (!success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Login failed. Please try again."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
+  if (!success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Login failed. Please try again."),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
 
-                // ---------------------------
-                // 🎯 التوجيه حسب الـ ROLE
-                // ---------------------------
-                if (userProvider.role == "super_admin") {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SuperAdminLabsScreen()),
-                  );
-                } else if (userProvider.role == "admin") {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SuperAdminLabsScreen()),
-                  );
-                } else {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FilterScreen()),
-                  );
-                }
-              },
+  // مهم جدًا — تحميل بيانات المستخدم
+  await userProvider.loadUserProfile();
+
+  // التوجيه حسب الدور
+  switch (userProvider.role) {
+    case "super_admin":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const SuperAdminLabsScreen()),
+      );
+      break;
+
+    case "engineer":
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const EngineerScreen()),
+      );
+      break;
+
+    case "student":
+    default:
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LabsListScreen()),
+      );
+  }
+},
+
               child: Container(
                 width: double.infinity,
                 height: 55.h,

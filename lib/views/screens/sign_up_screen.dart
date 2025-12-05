@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodel/user_provider.dart';
 import '../../util/app_color.dart';
 import 'filter_screen.dart';
+import 'labs_list_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -88,27 +89,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             /// SIGN UP BUTTON
             InkWell(
-              onTap: () async {
-                bool success = await userProvider.signUp(
-                  name,
-                  email,
-                  password,
-                );
+             onTap: () async {
+  bool success = await userProvider.signUp(
+    name,
+    email,
+    password,
+  );
 
-                if (success) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FilterScreen()),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Sign up failed. Please try again."),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
-              },
+  if (!success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Sign up failed. Please try again."),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+
+  // تحميل بيانات البروفايل
+  await userProvider.loadUserProfile();
+
+  // التوجيه حسب الدور
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (_) => const LabsListScreen()),
+  );
+},
+
               child: Container(
                 width: double.infinity,
                 height: 55.h,

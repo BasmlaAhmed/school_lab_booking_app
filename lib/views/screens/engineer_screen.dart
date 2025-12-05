@@ -24,44 +24,61 @@ class EngineerScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+appBar: AppBar(
+  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+  elevation: 0,
 
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios,
-            size: 30.w,
-            color: isDark ? Colors.white : AppColor.textPrimary,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 12.w),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EngineerProfileScreen(
-                      name: "Engineer Name",
-                      email: "engineer@example.com",
-                      role: "Engineer",
-                      image: "",
-                    ),
-                  ),
-                );
-              },
-              child: Icon(
-                Icons.person,
-                color: AppColor.primaryDark,
-                size: 35.sp,
+  
+
+  actions: [
+    // ====== REFRESH BUTTON ======
+    IconButton(
+      icon: Icon(
+        Icons.refresh,
+        size: 30.sp,
+        color: AppColor.primaryDark,
+      ),
+      onPressed: () async {
+        final provider = p.Provider.of<LabProvider>(context, listen: false);
+
+        await provider.releaseExpired();
+        await provider.fetchLabs();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Refreshed")),
+        );
+      },
+    ),
+
+    SizedBox(width: 8.w),
+
+    // ====== PROFILE BUTTON ======
+    Padding(
+      padding: EdgeInsets.only(right: 12.w),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EngineerProfileScreen(
+                name: "Engineer Name",
+                email: "engineer@example.com",
+                role: "Engineer",
+                image: "",
               ),
             ),
-          ),
-        ],
+          );
+        },
+        child: Icon(
+          Icons.person,
+          color: AppColor.primaryDark,
+          size: 35.sp,
+        ),
       ),
+    ),
+  ],
+),
+
 
       body: Padding(
         padding: EdgeInsets.all(15.w),

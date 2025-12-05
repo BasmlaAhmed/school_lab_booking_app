@@ -6,7 +6,7 @@ import 'viewmodel/device_provider.dart';
 import 'viewmodel/lab_provider.dart';
 import 'viewmodel/theme_provider.dart';
 import 'viewmodel/user_provider.dart';
-import 'views/screens/get_started.dart';
+import 'views/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.black,
           ),
 
-          home: const GetStarted(),
+          home: const SplashLabGo(),
         );
       },
     );

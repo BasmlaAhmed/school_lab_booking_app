@@ -44,171 +44,168 @@ class _StudentScreenState extends State<StudentScreen> {
 
     showDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (ctx, setStateDialog) => AlertDialog(
-                  backgroundColor: Theme.of(context).dialogBackgroundColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  title: Text(
-                    "Book $deviceName",
+      builder: (context) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          title: Text(
+            "Book $deviceName",
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium!.color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SizedBox(
+            height: 135.h,
+            child: Column(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedDate = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedDate == null
+                        ? "Select Date"
+                        : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodyMedium!.color,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  content: SizedBox(
-                    height: 135.h,
-                    child: Column(
-                      children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null) {
-                              setStateDialog(() => selectedDate = picked);
-                            }
-                          },
-                          child: Text(
-                            selectedDate == null
-                                ? "Select Date"
-                                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodyMedium!.color,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              setStateDialog(() => selectedFrom = picked);
-                            }
-                          },
-                          child: Text(
-                            selectedFrom == null
-                                ? "Select Start Time"
-                                : "From: ${selectedFrom!.format(context)}",
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodyMedium!.color,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              setStateDialog(() => selectedTo = picked);
-                            }
-                          },
-                          child: Text(
-                            selectedTo == null
-                                ? "Select End Time"
-                                : "To: ${selectedTo!.format(context)}",
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodyMedium!.color,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        "Cancel",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.primaryDark,
-                      ),
-                      onPressed: () async {
-                        if (selectedDate == null ||
-                            selectedFrom == null ||
-                            selectedTo == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please complete all fields"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        final fromDate = DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedFrom!.hour,
-                          selectedFrom!.minute,
-                        );
-
-                        final toDate = DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedTo!.hour,
-                          selectedTo!.minute,
-                        );
-
-                        if (!fromDate.isBefore(toDate)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "End time must be after start time.",
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        final success = await Provider.of<DeviceProvider>(
-                          context,
-                          listen: false,
-                        ).bookDeviceOnServer(deviceName, {
-                          'from': fromDate,
-                          'to': toDate,
-                          'notes': notesController.text,
-                        });
-
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              success
-                                  ? "Booked successfully"
-                                  : "Booking failed",
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        "Confirm",
-                        style: TextStyle(color: AppColor.textsecondary),
-                      ),
-                    ),
-                  ],
                 ),
+                SizedBox(height: 6.h),
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedFrom = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedFrom == null
+                        ? "Select Start Time"
+                        : "From: ${selectedFrom!.format(context)}",
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setStateDialog(() => selectedTo = picked);
+                    }
+                  },
+                  child: Text(
+                    selectedTo == null
+                        ? "Select End Time"
+                        : "To: ${selectedTo!.format(context)}",
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.primaryDark,
+              ),
+              onPressed: () async {
+                if (selectedDate == null ||
+                    selectedFrom == null ||
+                    selectedTo == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please complete all fields"),
+                    ),
+                  );
+                  return;
+                }
+
+                final fromDate = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  selectedFrom!.hour,
+                  selectedFrom!.minute,
+                );
+
+                final toDate = DateTime(
+                  selectedDate!.year,
+                  selectedDate!.month,
+                  selectedDate!.day,
+                  selectedTo!.hour,
+                  selectedTo!.minute,
+                );
+
+                if (!fromDate.isBefore(toDate)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "End time must be after start time.",
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                final deviceProvider =
+                    Provider.of<DeviceProvider>(context, listen: false);
+
+                final success =
+                    await deviceProvider.bookDeviceOnServer(deviceName, {
+                  'from': fromDate.toIso8601String(),
+                  'to': toDate.toIso8601String(),
+                  'notes': notesController.text,
+                });
+
+                await deviceProvider.fetchDevices(); // ← التحديث الفوري
+                setState(() {}); // ← إعادة بناء الشاشة فورًا
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? "Booked successfully" : "Booking failed",
+                    ),
+                  ),
+                );
+              },
+              child: Text(
+                "Confirm",
+                style: TextStyle(color: AppColor.textsecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -218,90 +215,88 @@ class _StudentScreenState extends State<StudentScreen> {
 
     showDialog(
       context: context,
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (ctx, setStateDialog) => AlertDialog(
-                  title: Text("Report Issue for $deviceName"),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DropdownButton<String>(
-                        value: selectedIssue,
-                        hint: const Text('Select issue type'),
-                        isExpanded: true,
-                        items:
-                            [
-                                  'Mouse issue',
-                                  'Keyboard issue',
-                                  'Cable issue',
-                                  'Others',
-                                ]
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (val) {
-                          setStateDialog(() => selectedIssue = val);
-                        },
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: Text("Report Issue for $deviceName"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<String>(
+                value: selectedIssue,
+                hint: const Text('Select issue type'),
+                isExpanded: true,
+                items: [
+                  'Mouse issue',
+                  'Keyboard issue',
+                  'Cable issue',
+                  'Others',
+                ]
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e),
                       ),
-                      if (selectedIssue == 'Others')
-                        TextField(
-                          controller: otherController,
-                          decoration: const InputDecoration(
-                            hintText: 'Describe the issue',
-                          ),
-                        ),
-                    ],
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  setStateDialog(() => selectedIssue = val);
+                },
+              ),
+              if (selectedIssue == 'Others')
+                TextField(
+                  controller: otherController,
+                  decoration: const InputDecoration(
+                    hintText: 'Describe the issue',
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text("Cancel"),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (selectedIssue == null ||
-                            (selectedIssue == 'Others' &&
-                                otherController.text.trim().isEmpty)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "Please provide issue type or description",
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        final reason =
-                            selectedIssue == 'Others'
-                                ? otherController.text.trim()
-                                : selectedIssue!;
-
-                        Navigator.pop(dialogContext);
-
-                        final ok = await Provider.of<DeviceProvider>(
-                          context,
-                          listen: false,
-                        ).reportIssueOnServer(deviceName, reason);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              ok ? "Reported — thank you" : "Report failed",
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text("Report"),
-                    ),
-                  ],
                 ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedIssue == null ||
+                    (selectedIssue == 'Others' &&
+                        otherController.text.trim().isEmpty)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Please provide issue type or description",
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                final reason = selectedIssue == 'Others'
+                    ? otherController.text.trim()
+                    : selectedIssue!;
+
+                Navigator.pop(dialogContext);
+
+                final ok = await Provider.of<DeviceProvider>(
+                  context,
+                  listen: false,
+                ).reportIssueOnServer(deviceName, reason);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok ? "Reported — thank you" : "Report failed",
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                "Report",
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -311,10 +306,9 @@ class _StudentScreenState extends State<StudentScreen> {
     required dynamic from,
     required dynamic to,
   }) {
-    final who =
-        studentName.isNotEmpty
-            ? studentName
-            : (studentEmail.isNotEmpty ? studentEmail : 'Another student');
+    final who = studentName.isNotEmpty
+        ? studentName
+        : (studentEmail.isNotEmpty ? studentEmail : 'Another student');
     final fromStr = _formatDisplay(from);
     final toStr = _formatDisplay(to);
     if (fromStr.isEmpty || toStr.isEmpty) return "Booked by $who";
@@ -351,14 +345,13 @@ class _StudentScreenState extends State<StudentScreen> {
       border = AppColor.repair;
     }
 
-    final canTapToBook = status != "not_working";
+    final canTapToBook = status == "available";
 
     return Expanded(
       child: InkWell(
-        onTap:
-            canTapToBook
-                ? () => _showBookingDialog(context, device["name"], device)
-                : null,
+        onTap: canTapToBook
+            ? () => _showBookingDialog(context, device["name"], device)
+            : null,
         child: Container(
           padding: EdgeInsets.all(12.r),
           margin: EdgeInsets.symmetric(horizontal: 5.w),
@@ -442,10 +435,14 @@ class _StudentScreenState extends State<StudentScreen> {
                   alignment: Alignment.bottomRight,
                   child: TextButton.icon(
                     onPressed: () => _showReportDialog(context, device['name']),
-                    icon: const Icon(Icons.report_problem, color: Colors.red),
-                    label: const Text(
+                    icon: Icon(
+                      Icons.report_problem,
+                      color: Colors.red,
+                      size: 18.w,
+                    ),
+                    label: Text(
                       "Report",
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: Colors.red, fontSize: 13.sp),
                     ),
                   ),
                 ),
@@ -497,7 +494,7 @@ class _StudentScreenState extends State<StudentScreen> {
   String _formatDisplay(dynamic isoOrString) {
     if (isoOrString == null) return '';
     try {
-      final dt = DateTime.parse(isoOrString.toString());
+      final dt = DateTime.parse(isoOrString.toString()); // بدون toLocal
       final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
       final minute = dt.minute.toString().padLeft(2, '0');
       final ampm = dt.hour >= 12 ? 'PM' : 'AM';
@@ -636,39 +633,26 @@ class _StudentScreenState extends State<StudentScreen> {
             color: Theme.of(context).textTheme.bodyMedium!.color,
           ),
         ),
-        // title: Text(
-        //   headerTitle,
-        //   style: TextStyle(
-        //     color: Theme.of(context).textTheme.bodyMedium!.color,
-        //     fontWeight: FontWeight.bold,
-        //   ),
-        // ),
+        
         actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 12.w),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => const StudentProfileScreen(
-                          name: "Student Name",
-                          email: "name@student.edu",
-                          studentId: "20215501",
-                          studentClass: "5A",
-                          image: "",
-                        ),
-                  ),
-                );
-              },
-              child: CircleAvatar(
-                radius: 22.r,
-                backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, size: 28.sp, color: Colors.grey[600]),
-              ),
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).textTheme.bodyMedium!.color,
             ),
+            onPressed: () async {
+              final deviceProvider =
+                  Provider.of<DeviceProvider>(context, listen: false);
+
+              await deviceProvider.fetchDevices(labId: widget.labId);
+              setState(() {});
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Refreshed")),
+              );
+            },
           ),
+          
         ],
       ),
       body: Padding(
@@ -687,27 +671,25 @@ class _StudentScreenState extends State<StudentScreen> {
             ),
             SizedBox(height: 20.h),
             Expanded(
-              child:
-                  devicePairs.isEmpty
-                      ? const Center(child: Text("No devices found"))
-                      : ListView.builder(
-                        itemCount: devicePairs.length,
-                        itemBuilder: (context, index) {
-                          // compute a readable cell label: use the letter of the first device
-                          final first = devicePairs[index][0];
-                          final letter =
-                              (first['name'] as String).isNotEmpty
-                                  ? (first['name'] as String)[0].toUpperCase()
-                                  : '';
-                          final cellLabel = 'Cell $letter';
-                          return _pairContainer(
-                            context,
-                            devicePairs[index],
-                            index,
-                            cellLabel,
-                          );
-                        },
-                      ),
+              child: devicePairs.isEmpty
+                  ? const Center(child: Text("No devices found"))
+                  : ListView.builder(
+                      itemCount: devicePairs.length,
+                      itemBuilder: (context, index) {
+                        // compute a readable cell label: use the letter of the first device
+                        final first = devicePairs[index][0];
+                        final letter = (first['name'] as String).isNotEmpty
+                            ? (first['name'] as String)[0].toUpperCase()
+                            : '';
+                        final cellLabel = 'Cell $letter';
+                        return _pairContainer(
+                          context,
+                          devicePairs[index],
+                          index,
+                          cellLabel,
+                        );
+                      },
+                    ),
             ),
           ],
         ),

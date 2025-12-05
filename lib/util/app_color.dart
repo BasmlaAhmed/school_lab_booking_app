@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppColor {
-  static Color primaryDark = Color.fromARGB(255, 5, 50, 52);
-  static Color primarylight = Color.fromARGB(252, 123, 198, 193);
-  static Color available = Color.fromARGB(255, 124, 240, 128);
+  static Color primaryDark = Color.fromARGB(255, 7, 46, 71);
+  static Color primarylight = Color.fromARGB(255, 93, 187, 228);
+  static Color available = Color.fromARGB(255, 114, 219, 118);
   static Color booked = Color.fromARGB(255, 245, 196, 92);
   static Color background = Color(0xfff6faf9);
   static Color card = Color(0xffffffff);
@@ -11,6 +11,6 @@ class AppColor {
   static Color repair = Color.fromARGB(255, 237, 116, 107);
   static Color black = Color.fromARGB(255, 0, 0, 0);
 
-  static Color textPrimary = Color(0xff0f2a2a);
+  static Color textPrimary = Color.fromARGB(255, 11, 45, 66);
   static Color textsecondary = Color.fromARGB(255, 255, 255, 255);
 }

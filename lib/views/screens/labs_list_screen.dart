@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../util/app_color.dart';
 import '../../viewmodel/device_provider.dart';
 import '../../viewmodel/lab_provider.dart';
+import 'student_profile_screen.dart';
 import 'student_screen.dart';
 
 class LabsListScreen extends StatefulWidget {
@@ -49,12 +50,6 @@ class _LabsListScreenState extends State<LabsListScreen> {
                 ? Colors.black
                 : AppColor.background,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: Icon(Icons.arrow_back_ios),
-        ),
         title: Text(
           "Labs",
           style: TextStyle(
@@ -66,6 +61,54 @@ class _LabsListScreenState extends State<LabsListScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          // ===== REFRESH BUTTON =====
+          IconButton(
+            icon: Icon(Icons.refresh, size: 25.w, color: AppColor.primaryDark),
+            onPressed: () async {
+              final provider = p.Provider.of<LabProvider>(
+                context,
+                listen: false,
+              );
+
+              await provider.releaseExpired();
+              await provider.fetchLabs();
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("Refreshed")));
+            },
+          ),
+
+          SizedBox(width: 8.w),
+
+          // ===== PROFILE BUTTON =====
+          Padding(
+            padding: EdgeInsets.only(right: 12.w),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => const StudentProfileScreen(
+                          name: "Student Name",
+                          email: "name@student.edu",
+                          studentId: "20215501",
+                          studentClass: "5A",
+                          image: "",
+                        ),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                radius: 22.r,
+                backgroundColor: Colors.grey[300],
+                child: Icon(Icons.person, size: 28.sp, color: Colors.grey[600]),
+              ),
+            ),
+          ),
+        ],
       ),
       body:
           labProvider.labs.isEmpty
@@ -107,7 +150,6 @@ class _LabsListScreenState extends State<LabsListScreen> {
                           size: 28.sp,
                         ),
                       ),
-
                       title: Text(
                         lab.name,
                         style: TextStyle(
@@ -116,7 +158,6 @@ class _LabsListScreenState extends State<LabsListScreen> {
                           color: AppColor.textPrimary,
                         ),
                       ),
-
                       subtitle:
                           isAvailable
                               ? Text(
@@ -146,10 +187,8 @@ class _LabsListScreenState extends State<LabsListScreen> {
                                     ),
                                   ),
                                   SizedBox(height: 4.h),
-
                                   Text(
-                                    "From: ${lab.fromTime ?? "-"}\nTo: ${lab.toTime ?? "-"}",
-
+                                    "From: ${shortTime(lab.fromTime)}\nTo: ${shortTime(lab.toTime)}",
                                     style: TextStyle(
                                       fontSize: 14.sp,
                                       color: AppColor.textPrimary,
@@ -157,12 +196,10 @@ class _LabsListScreenState extends State<LabsListScreen> {
                                   ),
                                 ],
                               ),
-
                       trailing: Icon(
                         Icons.arrow_forward_ios,
                         color: AppColor.primaryDark,
                       ),
-
                       onTap: () {
                         Navigator.push(
                           context,
@@ -173,7 +210,6 @@ class _LabsListScreenState extends State<LabsListScreen> {
                                       (_) => DeviceProvider(
                                         autoFetch: false,
                                       )..fetchDevices(labId: lab.id.toString()),
-
                                   child: StudentScreen(
                                     labId: lab.id.toString(),
                                   ),
@@ -186,5 +222,21 @@ class _LabsListScreenState extends State<LabsListScreen> {
                 },
               ),
     );
+  }
+
+  String shortTime(dynamic isoOrString) {
+    if (isoOrString == null) return '-';
+    try {
+      final dt = DateTime.parse(isoOrString.toString()).toLocal();
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      final year = dt.year;
+      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+      return '$day/$month/$year - $hour:$minute $ampm';
+    } catch (_) {
+      return isoOrString.toString();
+    }
   }
 }

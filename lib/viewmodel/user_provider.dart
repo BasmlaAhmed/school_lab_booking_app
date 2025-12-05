@@ -15,6 +15,26 @@ class UserProvider extends ChangeNotifier {
 
   String? _password;
 
+  bool get isLoggedIn => _supabase.auth.currentSession != null;
+
+Future<void> loadUserProfile() async {
+  final user = _supabase.auth.currentUser;
+  if (user == null) return;
+
+  final profile = await _supabase
+      .from('Users')
+      .select()
+      .eq('id', user.id)
+      .maybeSingle();
+
+  if (profile != null) {
+    _userEmail = profile['email'];
+    _userName = profile['name'];
+    _role = profile['role'];
+    notifyListeners();
+  }
+}
+
   void setEmail(String email) {
     _userEmail = email.trim();
     notifyListeners();
