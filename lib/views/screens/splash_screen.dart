@@ -31,11 +31,13 @@ class _SplashLabGoState extends State<SplashLabGo>
 
     // Optional: set status bar icons to match background (safe default)
     // This will adapt automatically after build when theme changes.
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
 
     _textAnim = AnimationController(
       vsync: this,
@@ -82,8 +84,8 @@ class _SplashLabGoState extends State<SplashLabGo>
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),
         pageBuilder: (_, __, ___) => screen,
-        transitionsBuilder: (_, anim, __, child) =>
-            FadeTransition(opacity: anim, child: child),
+        transitionsBuilder:
+            (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
       ),
     );
   }
@@ -102,16 +104,18 @@ class _SplashLabGoState extends State<SplashLabGo>
     final isDark = theme.brightness == Brightness.dark;
 
     // choose text color that contrasts background
-    final titleColor = cs.primary; // LabGo main color
+    final titleColor =isDark? AppColor.primarylight: AppColor.primaryDark; // LabGo main color
     final subtitleColor = cs.onBackground.withOpacity(0.85);
     final bgColor = theme.scaffoldBackgroundColor; // respect app theme
 
     // ensure status bar icons contrast current background
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -139,10 +143,7 @@ class _SplashLabGoState extends State<SplashLabGo>
                   offset: Offset(0, 30 * (1 - _textAnim.value)),
                   child: Transform.scale(
                     scale: 0.8 + (_textAnim.value * 0.2),
-                    child: Opacity(
-                      opacity: _textAnim.value,
-                      child: child,
-                    ),
+                    child: Opacity(opacity: _textAnim.value, child: child),
                   ),
                 );
               },

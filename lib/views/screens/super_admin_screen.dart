@@ -64,11 +64,14 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             children: [
               CircleAvatar(
                 radius: 22.r,
-                backgroundColor: cs.primary, // theme primary
+                backgroundColor:
+                    isDark
+                        ? AppColor.primarylight
+                        : AppColor.primaryDark, // theme primary
                 child: Text(
                   initials.toUpperCase(),
                   style: TextStyle(
-                    color: cs.onPrimary,
+                    color: Colors.white,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -374,7 +377,11 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
           // ===== REFRESH BUTTON =====
           IconButton(
             tooltip: "Refresh Labs",
-            icon: Icon(Icons.refresh, color: cs.primary, size: 26.sp),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onBackground,
+              size: 26.sp,
+            ),
             onPressed: () async {
               setState(() {}); // يعمل إعادة بناء للواجهة
 
@@ -399,7 +406,11 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
               child: CircleAvatar(
                 radius: 18.r,
                 backgroundColor: cs.primary.withOpacity(0.12),
-                child: Icon(Icons.person, color: cs.onPrimary, size: 22.sp),
+                child: Icon(
+                  Icons.person,
+                  color: Theme.of(context).colorScheme.onBackground,
+                  size: 22.sp,
+                ),
               ),
             ),
           ),
