@@ -24,61 +24,62 @@ class EngineerScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-appBar: AppBar(
-  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-  elevation: 0,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
 
-  
+        actions: [
+          // ====== REFRESH BUTTON ======
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              size: 30.sp,
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
+            onPressed: () async {
+              final provider = p.Provider.of<LabProvider>(
+                context,
+                listen: false,
+              );
 
-  actions: [
-    // ====== REFRESH BUTTON ======
-    IconButton(
-      icon: Icon(
-        Icons.refresh,
-        size: 30.sp,
-        color: AppColor.primaryDark,
-      ),
-      onPressed: () async {
-        final provider = p.Provider.of<LabProvider>(context, listen: false);
+              await provider.releaseExpired();
+              await provider.fetchLabs();
 
-        await provider.releaseExpired();
-        await provider.fetchLabs();
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("Refreshed")));
+            },
+          ),
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Refreshed")),
-        );
-      },
-    ),
+          SizedBox(width: 8.w),
 
-    SizedBox(width: 8.w),
-
-    // ====== PROFILE BUTTON ======
-    Padding(
-      padding: EdgeInsets.only(right: 12.w),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => EngineerProfileScreen(
-                name: "Engineer Name",
-                email: "engineer@example.com",
-                role: "Engineer",
-                image: "",
+          // ====== PROFILE BUTTON ======
+          Padding(
+            padding: EdgeInsets.only(right: 12.w),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => EngineerProfileScreen(
+                          name: "Engineer Name",
+                          email: "engineer@example.com",
+                          role: "Engineer",
+                          image: "",
+                        ),
+                  ),
+                );
+              },
+              child: Icon(
+                Icons.person,
+                color: Theme.of(context).colorScheme.onBackground,
+                size: 35.sp,
               ),
             ),
-          );
-        },
-        child: Icon(
-          Icons.person,
-          color: AppColor.primaryDark,
-          size: 35.sp,
-        ),
+          ),
+        ],
       ),
-    ),
-  ],
-),
-
 
       body: Padding(
         padding: EdgeInsets.all(15.w),
@@ -107,158 +108,165 @@ appBar: AppBar(
 
             Expanded(
               child: ListView(
-                children: labProvider.labs.map((lab) {
-                  final isBooked = (lab.status ?? '') == "booked";
-                  final bookedBy = lab.bookedBy ?? "Unknown";
-                  final className = lab.className ?? "";
-                  final fromTime = lab.fromTime ?? "";
-                  final toTime = lab.toTime ?? "";
+                children:
+                    labProvider.labs.map((lab) {
+                      final isBooked = (lab.status ?? '') == "booked";
+                      final bookedBy = lab.bookedBy ?? "Unknown";
+                      final className = lab.className ?? "";
+                      final fromTime = lab.fromTime ?? "";
+                      final toTime = lab.toTime ?? "";
 
-                  return InkWell(
-                    onTap: () async {
-                      if (isBooked) {
-                        final formattedFrom =
-                            LabModel.formatTime(lab.fromTime);
-                        final formattedTo =
-                            LabModel.formatTime(lab.toTime);
+                      return InkWell(
+                        onTap: () async {
+                          if (isBooked) {
+                            final formattedFrom = LabModel.formatTime(
+                              lab.fromTime,
+                            );
+                            final formattedTo = LabModel.formatTime(lab.toTime);
 
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            backgroundColor:
-                                Theme.of(context).dialogBackgroundColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                            showDialog(
+                              context: context,
+                              builder:
+                                  (_) => AlertDialog(
+                                    backgroundColor:
+                                        Theme.of(context).dialogBackgroundColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    title: Text(
+                                      "Lab is Booked",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColor.primaryDark,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      "Booked by: $bookedBy\n"
+                                      "Class: $className\n"
+                                      "From: $formattedFrom\n"
+                                      "To: $formattedTo",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color:
+                                            isDark
+                                                ? Colors.white
+                                                : AppColor.textPrimary,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text(
+                                          "OK",
+                                          style: TextStyle(
+                                            color: AppColor.primaryDark,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                            );
+                            return;
+                          }
+
+                          await labProvider.fetchLabs();
+                          final updatedLab = labProvider.labs.firstWhere(
+                            (x) => x.id == lab.id,
+                          );
+
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => LabInfo(
+                                    labId: updatedLab.id!,
+                                    labName: updatedLab.name ?? "",
+                                    labData: {
+                                      "name": updatedLab.name ?? "",
+                                      "status": updatedLab.status ?? "",
+                                      "bookedBy": updatedLab.bookedBy ?? '',
+                                      "className": updatedLab.className ?? '',
+                                      "from": updatedLab.fromTime ?? '',
+                                      "to": updatedLab.toTime ?? '',
+                                    },
+                                    engineerName:
+                                        updatedLab.bookedBy ?? 'Engineer',
+                                    lab: lab,
+                                  ),
                             ),
-                            title: Text(
-                              "Lab is Booked",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColor.primaryDark,
+                          );
+
+                          if (result == true) {
+                            labProvider.fetchLabs();
+                          }
+                        },
+
+                        child: Container(
+                          height: 60.h,
+                          padding: EdgeInsets.symmetric(horizontal: 15.w),
+                          margin: EdgeInsets.symmetric(vertical: 10.h),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: AppColor.primaryDark),
+                            color: Theme.of(context).cardColor,
+                            boxShadow: [
+                              if (!isDark)
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  offset: const Offset(0, 4),
+                                  blurRadius: 8,
+                                ),
+                            ],
+                          ),
+
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                lab.name ?? 'Lab',
+                                style: TextStyle(
+                                  fontSize: 25.sp,
+                                  color:
+                                      isDark
+                                          ? Colors.white
+                                          : AppColor.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            content: Text(
-                              "Booked by: $bookedBy\n"
-                              "Class: $className\n"
-                              "From: $formattedFrom\n"
-                              "To: $formattedTo",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    isDark ? Colors.white : AppColor.textPrimary,
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(
-                                  "OK",
-                                  style:
-                                      TextStyle(color: AppColor.primaryDark),
+
+                              Container(
+                                width: 150.w,
+                                height: 30.h,
+                                decoration: BoxDecoration(
+                                  color:
+                                      isBooked
+                                          ? AppColor.booked
+                                          : AppColor.available,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    isBooked
+                                        ? "Booked by $bookedBy"
+                                        : "Available",
+                                    style: TextStyle(
+                                      color:
+                                          isBooked
+                                              ? Colors.white
+                                              : (isDark
+                                                  ? Colors.white
+                                                  : AppColor.textPrimary),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        );
-                        return;
-                      }
-
-                      await labProvider.fetchLabs();
-                      final updatedLab = labProvider.labs.firstWhere(
-                        (x) => x.id == lab.id,
-                      );
-
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LabInfo(
-                            labId: updatedLab.id!,
-                            labName: updatedLab.name ?? "",
-                            labData: {
-                              "name": updatedLab.name ?? "",
-                              "status": updatedLab.status ?? "",
-                              "bookedBy": updatedLab.bookedBy ?? '',
-                              "className": updatedLab.className ?? '',
-                              "from": updatedLab.fromTime ?? '',
-                              "to": updatedLab.toTime ?? '',
-                            },
-                            engineerName:
-                                updatedLab.bookedBy ?? 'Engineer', lab: lab,
-                          ),
                         ),
                       );
-
-                      if (result == true) {
-                        labProvider.fetchLabs();
-                      }
-                    },
-
-                    child: Container(
-                      height: 60.h,
-                      padding: EdgeInsets.symmetric(horizontal: 15.w),
-                      margin: EdgeInsets.symmetric(vertical: 10.h),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: AppColor.primaryDark,
-                        ),
-                        color: Theme.of(context).cardColor,
-                        boxShadow: [
-                          if (!isDark)
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              offset: const Offset(0, 4),
-                              blurRadius: 8,
-                            ),
-                        ],
-                      ),
-
-                      child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            lab.name ?? 'Lab',
-                            style: TextStyle(
-                              fontSize: 25.sp,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColor.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-
-                          Container(
-                            width: 150.w,
-                            height: 30.h,
-                            decoration: BoxDecoration(
-                              color: isBooked
-                                  ? AppColor.booked
-                                  : AppColor.available,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                isBooked
-                                    ? "Booked by $bookedBy"
-                                    : "Available",
-                                style: TextStyle(
-                                  color: isBooked
-                                      ? Colors.white
-                                      : (isDark
-                                          ? Colors.white
-                                          : AppColor.textPrimary),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.sp,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                    }).toList(),
               ),
             ),
           ],

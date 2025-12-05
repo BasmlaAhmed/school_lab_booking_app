@@ -27,6 +27,10 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
   }
 
   Widget _buildLabCard(BuildContext context, Map<String, dynamic> lab) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final name = (lab['name'] ?? 'Unnamed Lab').toString();
 
     // initials
@@ -39,8 +43,9 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             .join();
 
     return Card(
-      elevation: 2,
+      elevation: isDark ? 1 : 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      color: theme.cardColor,
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
         onTap: () {
@@ -59,11 +64,11 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             children: [
               CircleAvatar(
                 radius: 22.r,
-                backgroundColor: Colors.blue.shade700,
+                backgroundColor: cs.primary, // theme primary
                 child: Text(
                   initials.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: cs.onPrimary,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -79,6 +84,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -94,8 +100,9 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                               SizedBox(
                                 width: 14.w,
                                 height: 14.h,
-                                child: const CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  color: cs.primary,
                                 ),
                               ),
                               SizedBox(width: 8.w),
@@ -103,7 +110,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                                 'Loading devices...',
                                 style: TextStyle(
                                   fontSize: 13.sp,
-                                  color: Colors.grey[600],
+                                  color: cs.onSurface.withOpacity(0.7),
                                 ),
                               ),
                             ],
@@ -115,7 +122,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                             'Devices: -  •  Not working: -',
                             style: TextStyle(
                               fontSize: 13.sp,
-                              color: Colors.grey[600],
+                              color: cs.onSurface.withOpacity(0.7),
                             ),
                           );
                         }
@@ -133,9 +140,10 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
 
                         return Row(
                           children: [
-                            _buildStatBadge('$total', 'Devices'),
+                            _buildStatBadge(context, '$total', 'Devices'),
                             SizedBox(width: 8.w),
                             _buildStatBadge(
+                              context,
                               '$notWorking',
                               'Not working',
                               isWarning: notWorking > 0,
@@ -150,7 +158,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16.sp,
-                color: Colors.grey[600],
+                color: cs.onSurface.withOpacity(0.65),
               ),
             ],
           ),
@@ -161,6 +169,9 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
 
   // Grid card variant for larger screens (compact)
   Widget _buildLabGridCard(BuildContext context, Map<String, dynamic> lab) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final name = (lab['name'] ?? 'Unnamed Lab').toString();
     final initials =
         name
@@ -173,6 +184,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      color: theme.cardColor,
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
         onTap: () {
@@ -192,11 +204,11 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             children: [
               CircleAvatar(
                 radius: 24.r,
-                backgroundColor: Colors.blue.shade700,
+                backgroundColor: cs.primary,
                 child: Text(
                   initials.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: cs.onPrimary,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -205,7 +217,11 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
               SizedBox(height: 12.h),
               Text(
                 name,
-                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -220,8 +236,9 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                         SizedBox(
                           width: 14.w,
                           height: 14.h,
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
+                            color: cs.primary,
                           ),
                         ),
                         SizedBox(width: 8.w),
@@ -229,7 +246,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                           'Loading...',
                           style: TextStyle(
                             fontSize: 13.sp,
-                            color: Colors.grey[600],
+                            color: cs.onSurface.withOpacity(0.7),
                           ),
                         ),
                       ],
@@ -240,7 +257,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                       'Devices: -  •  Not working: -',
                       style: TextStyle(
                         fontSize: 13.sp,
-                        color: Colors.grey[600],
+                        color: cs.onSurface.withOpacity(0.7),
                       ),
                     );
                   }
@@ -255,9 +272,10 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                       }).length;
                   return Row(
                     children: [
-                      _buildStatBadge('$total', 'Devices'),
+                      _buildStatBadge(context, '$total', 'Devices'),
                       SizedBox(width: 8.w),
                       _buildStatBadge(
+                        context,
                         '$notWorking',
                         'Not working',
                         isWarning: notWorking > 0,
@@ -272,7 +290,7 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
                 child: Icon(
                   Icons.arrow_forward_ios,
                   size: 16.sp,
-                  color: Colors.grey[600],
+                  color: cs.onSurface.withOpacity(0.65),
                 ),
               ),
             ],
@@ -282,11 +300,30 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
     );
   }
 
-  Widget _buildStatBadge(String value, String label, {bool isWarning = false}) {
+  Widget _buildStatBadge(
+    BuildContext context,
+    String value,
+    String label, {
+    bool isWarning = false,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bg =
+        isWarning
+            ? (isDark ? cs.error.withOpacity(0.18) : Colors.red.shade100)
+            : (isDark ? cs.surfaceVariant : Colors.grey.shade200);
+
+    final textColor =
+        isWarning
+            ? (isDark ? Colors.red.shade100 : Colors.red.shade700)
+            : cs.onSurface;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: isWarning ? Colors.red.shade100 : Colors.grey.shade200,
+        color: bg,
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -296,13 +333,16 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             style: TextStyle(
               fontSize: 13.sp,
               fontWeight: FontWeight.w700,
-              color: isWarning ? Colors.red.shade700 : Colors.black,
+              color: textColor,
             ),
           ),
           SizedBox(width: 6.w),
           Text(
             label,
-            style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: cs.onSurface.withOpacity(0.75),
+            ),
           ),
         ],
       ),
@@ -311,74 +351,75 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     // افتراض أنك فعلت ScreenUtilInit في main.dart
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: cs.onBackground),
         title: Text(
           'Labs',
-          style: TextStyle(fontSize: 25.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 25.sp,
+            fontWeight: FontWeight.bold,
+            color: cs.onBackground,
+          ),
         ),
         centerTitle: true,
-      actions: [
-  // ===== REFRESH BUTTON =====
-  IconButton(
-    tooltip: "Refresh Labs",
-    icon: Icon(
-      Icons.refresh,
-      color: AppColor.primaryDark,
-      size: 26,
-    ),
-    onPressed: () async {
-      setState(() {}); // يعمل إعادة بناء للواجهة
+        actions: [
+          // ===== REFRESH BUTTON =====
+          IconButton(
+            tooltip: "Refresh Labs",
+            icon: Icon(Icons.refresh, color: cs.primary, size: 26.sp),
+            onPressed: () async {
+              setState(() {}); // يعمل إعادة بناء للواجهة
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Refreshed")),
-      );
-    },
-  ),
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("Refreshed")));
+            },
+          ),
 
-  SizedBox(width: 6.w),
+          SizedBox(width: 6.w),
 
-  // ===== PROFILE BUTTON =====
-  Padding(
-    padding: EdgeInsets.only(right: 12.w),
-    child: GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => SuperAdminProfileScreen()),
-        );
-      },
-      child: CircleAvatar(
-        radius: 18.r,
-        backgroundColor: AppColor.primaryDark.withOpacity(0.1),
-        child: Icon(
-          Icons.person,
-          color: AppColor.primaryDark,
-          size: 22.sp,
-        ),
-      ),
-    ),
-  ),
-],
-
-
+          // ===== PROFILE BUTTON =====
+          Padding(
+            padding: EdgeInsets.only(right: 12.w),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SuperAdminProfileScreen()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 18.r,
+                backgroundColor: cs.primary.withOpacity(0.12),
+                child: Icon(Icons.person, color: cs.onPrimary, size: 22.sp),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: FutureBuilder(
           future: _service.getAllLabs(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(color: cs.primary),
+              );
             }
 
             if (snapshot.hasError) {
               return Center(
                 child: Text(
                   'Error loading labs',
-                  style: TextStyle(fontSize: 14.sp),
+                  style: TextStyle(fontSize: 14.sp, color: cs.onSurface),
                 ),
               );
             }
@@ -386,7 +427,10 @@ class _SuperAdminLabsScreenState extends State<SuperAdminLabsScreen> {
             final raw = snapshot.data;
             if (raw == null || (raw is List && raw.isEmpty)) {
               return Center(
-                child: Text('No labs found', style: TextStyle(fontSize: 14.sp)),
+                child: Text(
+                  'No labs found',
+                  style: TextStyle(fontSize: 14.sp, color: cs.onSurface),
+                ),
               );
             }
 

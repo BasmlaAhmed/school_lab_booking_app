@@ -220,6 +220,7 @@ class _StudentScreenState extends State<StudentScreen> {
           title: Text("Report Issue for $deviceName"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            
             children: [
               DropdownButton<String>(
                 value: selectedIssue,
@@ -422,8 +423,8 @@ class _StudentScreenState extends State<StudentScreen> {
                   padding: EdgeInsets.all(6.r),
                   margin: EdgeInsets.only(top: 5.h),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8.r),
+                    color: Theme.of(context).colorScheme.surfaceVariant, 
+  borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
                     "Issue: $reason",
@@ -455,7 +456,10 @@ class _StudentScreenState extends State<StudentScreen> {
 
   // empty box shown when a letter has only one device
   Widget _emptyDeviceBox(BuildContext context) {
-    final Color visibleBg = Colors.grey.shade200;
+    final Color visibleBg = Theme.of(context).brightness == Brightness.dark
+    ? Colors.grey[800]!
+    : Colors.grey.shade200;
+
     final Color border = Theme.of(context).dividerColor;
     final Color hintColor = Theme.of(
       context,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../util/app_color.dart';
 import '../../viewmodel/device_provider.dart';
@@ -24,47 +23,51 @@ class _LabsListScreenState extends State<LabsListScreen> {
     p.Provider.of<LabProvider>(context, listen: false).fetchLabs();
   }
 
-  // String formatLabTime(String? dateTimeStr) {
-  //   if (dateTimeStr == null || dateTimeStr.isEmpty) return "-";
-  //   try {
-  //     final dt = DateTime.parse(dateTimeStr);
-  //     return "${dt.day}/${dt.month}/${dt.year} - ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
-  //   } catch (_) {
-  //     return dateTimeStr;
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     final labProvider = p.Provider.of<LabProvider>(context);
 
+    // theme shortcuts (safe defaults)
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final cardBg = theme.cardColor;
+    final divider = theme.dividerColor;
+    // use colorScheme for reliable contrast
+    final cs = theme.colorScheme;
+    final textPrimary = cs.onSurface;
+    final textSecondary = cs.onSurface.withOpacity(0.85);
+    final subtleText = cs.onSurface.withOpacity(0.7);
+    final primaryColor = Color.fromARGB(255, 85, 174, 88);
+    final errorColor = cs.error;
+    final iconPrimary =
+        cs.onBackground; // icon color that contrasts with background
+    final iconAccent = cs.onSurface;
+
     return Scaffold(
-      backgroundColor:
-          Theme.of(context).brightness == Brightness.dark
-              ? Colors.black
-              : AppColor.background,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor:
-            Theme.of(context).brightness == Brightness.dark
-                ? Colors.black
-                : AppColor.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        // ensure AppBar icons are visible
+        iconTheme: IconThemeData(color: iconPrimary),
         title: Text(
           "Labs",
           style: TextStyle(
-            backgroundColor:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Colors.black
-                    : AppColor.background,
             fontSize: 24.sp,
             fontWeight: FontWeight.bold,
+            color: textPrimary,
           ),
         ),
         actions: [
           // ===== REFRESH BUTTON =====
           IconButton(
-            icon: Icon(Icons.refresh, size: 25.w, color: AppColor.primaryDark),
+            icon: Icon(
+              Icons.refresh,
+              size: 25.w,
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
             onPressed: () async {
               final provider = p.Provider.of<LabProvider>(
                 context,
@@ -103,8 +106,12 @@ class _LabsListScreenState extends State<LabsListScreen> {
               },
               child: CircleAvatar(
                 radius: 22.r,
-                backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, size: 28.sp, color: Colors.grey[600]),
+                backgroundColor: theme.colorScheme.surfaceVariant,
+                child: Icon(
+                  Icons.person,
+                  size: 28.sp,
+                  color: Theme.of(context).colorScheme.onBackground,
+                ),
               ),
             ),
           ),
@@ -112,30 +119,35 @@ class _LabsListScreenState extends State<LabsListScreen> {
       ),
       body:
           labProvider.labs.isEmpty
-              ? Center(
-                child: CircularProgressIndicator(color: AppColor.primaryDark),
-              )
+              ? Center(child: CircularProgressIndicator(color: primaryColor))
               : ListView.builder(
                 padding: EdgeInsets.all(15.w),
                 itemCount: labProvider.labs.length,
                 itemBuilder: (context, index) {
                   final lab = labProvider.labs[index];
-
                   final isAvailable = lab.status == "available";
-                  final color =
-                      isAvailable ? AppColor.available : AppColor.booked;
+
+                  // circle colors (use colorScheme for consistency)
+                  final circleBg =
+                      isAvailable
+                          ? primaryColor.withOpacity(0.18)
+                          : errorColor.withOpacity(0.13);
+                  final circleIconColor =
+                      isAvailable
+                          ? primaryColor
+                          : Color.fromARGB(255, 245, 196, 92);
 
                   return Container(
                     margin: EdgeInsets.only(bottom: 15.h),
                     decoration: BoxDecoration(
-                      color: AppColor.card,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(15.r),
-                      border: Border.all(color: AppColor.border),
+                      border: Border.all(color: AppColor.primaryDark),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
+                          color: isDark ? Colors.black26 : Colors.black12,
+                          blurRadius: isDark ? 2 : 4,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -143,10 +155,10 @@ class _LabsListScreenState extends State<LabsListScreen> {
                       contentPadding: EdgeInsets.all(15.w),
                       leading: CircleAvatar(
                         radius: 28.r,
-                        backgroundColor: color,
+                        backgroundColor: circleBg,
                         child: Icon(
                           Icons.computer,
-                          color: AppColor.textPrimary,
+                          color: circleIconColor,
                           size: 28.sp,
                         ),
                       ),
@@ -154,8 +166,9 @@ class _LabsListScreenState extends State<LabsListScreen> {
                         lab.name,
                         style: TextStyle(
                           fontSize: 20.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          height: 1.05,
                         ),
                       ),
                       subtitle:
@@ -163,42 +176,45 @@ class _LabsListScreenState extends State<LabsListScreen> {
                               ? Text(
                                 "Available",
                                 style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: AppColor.primaryDark,
+                                  fontSize: 15.sp,
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               )
                               : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  SizedBox(height: 4.h),
                                   Text(
                                     "Booked by: ENG / ${lab.bookedBy ?? "Unknown"}",
                                     style: TextStyle(
-                                      fontSize: 16.sp,
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15.sp,
+                                      color: Color.fromARGB(255, 245, 196, 92),
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  SizedBox(height: 4.h),
+                                  SizedBox(height: 6.h),
                                   Text(
                                     "Class: ${lab.className ?? "-"}",
                                     style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: AppColor.textPrimary,
+                                      fontSize: 14.sp,
+                                      color: textSecondary,
                                     ),
                                   ),
-                                  SizedBox(height: 4.h),
+                                  SizedBox(height: 6.h),
                                   Text(
                                     "From: ${shortTime(lab.fromTime)}\nTo: ${shortTime(lab.toTime)}",
                                     style: TextStyle(
-                                      fontSize: 14.sp,
-                                      color: AppColor.textPrimary,
+                                      fontSize: 13.sp,
+                                      color: subtleText,
                                     ),
                                   ),
                                 ],
                               ),
                       trailing: Icon(
                         Icons.arrow_forward_ios,
-                        color: AppColor.primaryDark,
+                        color: iconAccent,
+                        size: 18.sp,
                       ),
                       onTap: () {
                         Navigator.push(

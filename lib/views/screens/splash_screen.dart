@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 import '../../util/app_color.dart';
 import '../../viewmodel/user_provider.dart';
@@ -22,12 +23,19 @@ class SplashLabGo extends StatefulWidget {
 
 class _SplashLabGoState extends State<SplashLabGo>
     with TickerProviderStateMixin {
-
   late AnimationController _textAnim;
 
   @override
   void initState() {
     super.initState();
+
+    // Optional: set status bar icons to match background (safe default)
+    // This will adapt automatically after build when theme changes.
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ));
 
     _textAnim = AnimationController(
       vsync: this,
@@ -36,6 +44,7 @@ class _SplashLabGoState extends State<SplashLabGo>
 
     // 🔥 بعد 3 ثواني → نعمل Redirect حسب Session
     Timer(const Duration(seconds: 3), () async {
+      // use read instead of watch; safe inside timer
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // لو مفيش session → أول مرة يفتح الأب
@@ -67,6 +76,7 @@ class _SplashLabGoState extends State<SplashLabGo>
   }
 
   void _goTo(Widget screen) {
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
@@ -86,23 +96,38 @@ class _SplashLabGoState extends State<SplashLabGo>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    // theme-aware colors
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
+    // choose text color that contrasts background
+    final titleColor = cs.primary; // LabGo main color
+    final subtitleColor = cs.onBackground.withOpacity(0.85);
+    final bgColor = theme.scaffoldBackgroundColor; // respect app theme
+
+    // ensure status bar icons contrast current background
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    ));
+
+    return Scaffold(
+      backgroundColor: bgColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
-            // 🔥 Lottie Animation
-            Center(
-              child: SizedBox(
-                height: 220.h,
-                child: Lottie.asset(
-                  "assets/splash.json",
-                  fit: BoxFit.contain,
-                  width: 400.w,
-                ),
+            // 🔥 Lottie Animation (if Lottie uses colors inside asset, make sure asset supports dark)
+            SizedBox(
+              height: 220.h,
+              child: Lottie.asset(
+                "assets/splash.json",
+                fit: BoxFit.contain,
+                width: 400.w,
+                // If your Lottie has color layers you want to tint, you can use delegates,
+                // but that's optional and depends on the asset.
               ),
             ),
 
@@ -125,7 +150,7 @@ class _SplashLabGoState extends State<SplashLabGo>
                 "LabGo",
                 style: TextStyle(
                   fontSize: 45.sp,
-                  color: AppColor.primaryDark,
+                  color: titleColor,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                 ),
@@ -140,7 +165,7 @@ class _SplashLabGoState extends State<SplashLabGo>
                 "Manage • Reserve • Control",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColor.primaryDark,
+                  color: subtitleColor,
                   fontSize: 15.sp,
                 ),
               ),

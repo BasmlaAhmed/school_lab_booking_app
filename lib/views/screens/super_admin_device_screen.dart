@@ -22,9 +22,11 @@ class _SuperAdminDevicesScreenState extends State<SuperAdminDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     // تأكد أن ScreenUtil.init تم استدعاؤه أعلى في الهرمية (main.dart)
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -137,9 +139,11 @@ class _SuperAdminDevicesScreenState extends State<SuperAdminDevicesScreen> {
                               value: status,
                               // صغيرة: نخلي حجم النص مناسب للشاشة
                               style: TextStyle(
-                                fontSize: 14.sp,
-                                color: Colors.black,
-                              ),
+  fontSize: 14.sp,
+  fontWeight: FontWeight.w600,
+  color: Theme.of(context).colorScheme.onSurface,
+),
+
                               items: [
                                 DropdownMenuItem(
                                   value: "available",
