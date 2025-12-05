@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/user_provider.dart';
 import '../../util/app_color.dart';
-import 'filter_screen.dart';
 import 'labs_list_screen.dart';
 
 class SignUpScreen extends StatefulWidget {

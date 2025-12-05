@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../util/app_color.dart';
 import '../../viewmodel/device_provider.dart';
-import 'student_profile_screen.dart';
 
 class StudentScreen extends StatefulWidget {
   final String labId;

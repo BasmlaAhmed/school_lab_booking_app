@@ -32,7 +32,6 @@ class _LabsListScreenState extends State<LabsListScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final scaffoldBg = theme.scaffoldBackgroundColor;
     final cardBg = theme.cardColor;
-    final divider = theme.dividerColor;
     // use colorScheme for reliable contrast
     final cs = theme.colorScheme;
     final textPrimary = cs.onSurface;
